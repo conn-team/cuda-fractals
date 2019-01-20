@@ -6,6 +6,7 @@
 
 #include "cuda_helper.hpp"
 
+struct cudaGraphicsResource *cudaViewBuffer;
 GLuint viewBuffer, viewTexture;
 int width, height;
 
@@ -30,9 +31,11 @@ void renderImage(uint32_t *mapped) {
 
 void onRender() {
     void *mapped;
-    gpuErrchk(cudaGLMapBufferObject(&mapped, viewBuffer));
+    size_t mappedSize;
+    gpuErrchk(cudaGraphicsMapResources(1, &cudaViewBuffer, 0));
+    gpuErrchk(cudaGraphicsResourceGetMappedPointer(&mapped, &mappedSize, cudaViewBuffer));
     renderImage(reinterpret_cast<uint32_t*>(mapped));
-    gpuErrchk(cudaGLUnmapBufferObject(viewBuffer));
+    gpuErrchk(cudaGraphicsUnmapResources(1, &cudaViewBuffer, 0));
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
     glBindTexture(GL_TEXTURE_2D, viewTexture);
@@ -56,7 +59,7 @@ void onReshape(int w, int h) {
 
     // Free old buffers
     if (viewBuffer) {
-        cudaGLUnregisterBufferObject(viewBuffer);
+        cudaGraphicsUnregisterResource(cudaViewBuffer);
         glDeleteBuffers(1, &viewBuffer);
         viewBuffer = 0;
     }
@@ -80,7 +83,7 @@ void onReshape(int w, int h) {
     glGenBuffers(1, &viewBuffer);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
     glBufferData(GL_PIXEL_UNPACK_BUFFER, width*height*4, nullptr, GL_DYNAMIC_COPY);
-    gpuErrchk(cudaGLRegisterBufferObject(viewBuffer));
+    gpuErrchk(cudaGraphicsGLRegisterBuffer(&cudaViewBuffer, viewBuffer, cudaGraphicsMapFlagsWriteDiscard));
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     // Setup scene
