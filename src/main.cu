@@ -1,8 +1,8 @@
 #include <cstdint>
 #include <cstdio>
-#include "GL/glew.h"
-#include "GL/freeglut.h"
-#include "cuda_gl_interop.h"
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+#include <cuda_gl_interop.h>
 
 #include "cuda_helper.hpp"
 
@@ -96,8 +96,8 @@ void onReshape(int w, int h) {
 int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
-    glutInitWindowSize(500, 500);
-    glutInitWindowPosition(100, 100);
+    glutInitWindowSize(800, 600);
+    glutInitWindowPosition(200, 200);
     glutCreateWindow("cuda-fractals");
 
     glewInit();
