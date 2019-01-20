@@ -19,11 +19,11 @@ CXX_FLAGS = -Wall -Wextra -std=c++11
 CXX_LIBS = -I./$(INC_DIR)
 CXX=g++
 
-NVC_FLAGS = --compiler-options -Wall --compiler-options -Wextra --compiler-options -std=c++11
+NVC_FLAGS = --compiler-options -Wall,-Wextra -std=c++11
 NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
-LD_FLAGS = --compiler-options -Wall --compiler-options -Wextra --compiler-options -std=c++11
+LD_FLAGS = --compiler-options -Wall,-Wextra -std=c++11
 LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut
 LD=nvcc
 
