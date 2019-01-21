@@ -14,6 +14,8 @@ struct Complex {
     __both__ Complex operator*(const T& r)       const { return {x*r, y*r}; }
     __both__ Complex operator*(const Complex& r) const { return {x*r.x-y*r.y, y*r.x+x*r.y}; }
 
+    __both__ Complex sqr() const { return {x*x-y*y, 2*x*y}; }
+
     __both__ Complex& operator+=(const Complex& r) {
         x += r.x;
         y += r.y;

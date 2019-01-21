@@ -8,12 +8,21 @@ struct ViewInfo {
     double scale;
 };
 
-__device__ bool mandelbrot(Complex<double> pos) {
+__device__ int mandelbrot(Complex<double> pos, int maxIters) {
     Complex<double> z;
-    for (int i = 0; i < 50; i++) {
-        z = z*z + pos;
+    int iters = 0;
+
+    while (iters < maxIters && z.absSqr() < 4) {
+        z = z.sqr() + pos;
+        iters++;
     }
-    return z.absSqr() < 4;
+
+    return iters;
+}
+
+__device__ Color getColor(double i) {
+    int tmp = int(i * 255 * 5) % 256;
+    return Color(tmp, tmp, tmp);
 }
 
 __global__ void renderImageKernel(ViewInfo info) {
@@ -24,7 +33,10 @@ __global__ void renderImageKernel(ViewInfo info) {
 
     Complex<double> pos{double(index % info.stride), double(index / info.stride)};
     pos = pos*info.scale + info.translation;
-    info.image[index] = (mandelbrot(pos) ? Color(255, 255, 255) : Color(0, 0, 0));
+
+    constexpr int maxIters = 128;
+    int iters = mandelbrot(pos, maxIters);
+    info.image[index] = (iters < maxIters ? getColor(double(iters) / maxIters) : Color(0, 0, 0));
 }
 
 void renderImage(const Viewport& view) {
