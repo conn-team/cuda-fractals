@@ -12,3 +12,9 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 }
 
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
+#ifdef __CUDACC__
+#define __both__ __host__ __device__
+#else
+#define __both__
+#endif
