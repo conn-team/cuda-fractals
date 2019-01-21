@@ -15,6 +15,9 @@ GLuint viewBuffer, viewTexture;
 Viewport view;
 int width, height;
 
+int lastX, lastY;
+bool isMoving = false;
+
 void onRender() {
     // Map PBO to CUDA
     size_t mappedSize;
@@ -60,6 +63,20 @@ void onMouse(int button, int state, int x, int y) {
         view.center.y += dy * view.scale * (zoom - 1);
         view.scale *= zoom;
 
+        glutPostRedisplay();
+    } else if (button == GLUT_LEFT_BUTTON) {
+        isMoving = (state == GLUT_DOWN);
+    }
+}
+
+void onMotion(int x, int y) {
+    int dx = x-lastX, dy = y-lastY;
+    lastX = x;
+    lastY = y;
+
+    if (isMoving) {
+        view.center.x -= dx * view.scale * 2 / width;
+        view.center.y += dy * view.scale * 2 / width;
         glutPostRedisplay();
     }
 }
@@ -120,6 +137,8 @@ int main(int argc, char **argv) {
 
     glutDisplayFunc(onRender);
     glutMouseFunc(onMouse);
+    glutMotionFunc(onMotion);
+    glutPassiveMotionFunc(onMotion);
     glutReshapeFunc(onReshape);
     glutMainLoop();
     return 0;
