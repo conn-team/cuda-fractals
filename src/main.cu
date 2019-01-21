@@ -8,6 +8,7 @@
 #include "generator.hpp"
 
 constexpr double SUPERSAMPLING_RATIO = 2;
+constexpr double ZOOM_SPEED = 1.2;
 
 struct cudaGraphicsResource *cudaViewBuffer;
 GLuint viewBuffer, viewTexture;
@@ -43,6 +44,24 @@ void onRender() {
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glFlush();
+}
+
+void onMouse(int button, int state, int x, int y) {
+    if (button == 3 || button == 4) {
+        if (state == GLUT_UP) {
+            return;
+        }
+
+        double zoom = (button == 3 ? ZOOM_SPEED : 1/ZOOM_SPEED);
+        double dx = 2.0*x/width - 1;
+        double dy = 2.0*y/width - double(height)/width;
+
+        view.center.x -= dx * view.scale * (zoom - 1);
+        view.center.y += dy * view.scale * (zoom - 1);
+        view.scale *= zoom;
+
+        glutPostRedisplay();
+    }
 }
 
 void onReshape(int w, int h) {
@@ -100,6 +119,7 @@ int main(int argc, char **argv) {
     glewInit();
 
     glutDisplayFunc(onRender);
+    glutMouseFunc(onMouse);
     glutReshapeFunc(onReshape);
     glutMainLoop();
     return 0;
