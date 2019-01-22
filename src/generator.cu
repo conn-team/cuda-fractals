@@ -59,9 +59,9 @@ void renderImage(const Viewport& view) {
     info.length = nPixels;
     info.stride = view.width;
 
-    info.translation.x = view.center.x - view.scale;
-    info.scale = (view.center.x - info.translation.x) * 2 / view.width;
-    info.translation.y = view.center.y - info.scale * view.height / 2;
+    info.translation.x = view.center.real().get_d() - view.scale.get_d();
+    info.scale = (view.center.real().get_d() - info.translation.x) * 2 / view.width;
+    info.translation.y = view.center.imag().get_d() - info.scale * view.height / 2;
 
     renderImageKernel<<<nBlocks, blockSize>>>(info);
     gpuErrchk(cudaDeviceSynchronize());
