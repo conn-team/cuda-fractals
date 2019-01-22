@@ -13,12 +13,7 @@ struct Color {
 };
 
 struct HSVAColor {
-    union {
-        uint32_t value;
-        struct {
-            float h, s, v, a;
-        };
-    };
+    float h, s, v, a;
 
     __both__ HSVAColor(float h, float s, float v, float a = 1.0) : h(h), s(s), v(v), a(a) {}
     __both__ HSVAColor(void) : HSVAColor(0.0, 0.0, 0.0) {}
