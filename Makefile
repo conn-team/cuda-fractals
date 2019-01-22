@@ -24,7 +24,7 @@ NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
 LD_FLAGS = --compiler-options -Wall,-Wextra -std=c++11
-LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW
+LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lgmp
 LD=nvcc
 
 all: $(BIN_DIR)/$(TARGET)
