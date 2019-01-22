@@ -1,6 +1,8 @@
 #pragma once
 
+#include <complex>
 #include <cstdint>
+#include <gmpxx.h>
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
@@ -67,8 +69,8 @@ struct HSVAColor {
 struct Viewport {
     Color *image;
     int width, height;
-    Complex<double> center;
-    double scale;
+    std::complex<mpf_class> center;
+    mpf_class scale;
 };
 
 void renderImage(const Viewport& view);

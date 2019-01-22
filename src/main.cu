@@ -59,8 +59,8 @@ void onMouse(int button, int state, int x, int y) {
         double dx = 2.0*x/width - 1;
         double dy = 2.0*y/width - double(height)/width;
 
-        view.center.x -= dx * view.scale * (zoom - 1);
-        view.center.y += dy * view.scale * (zoom - 1);
+        view.center.real(view.center.real() - dx*(zoom-1)*view.scale);
+        view.center.imag(view.center.imag() + dy*(zoom-1)*view.scale);
         view.scale *= zoom;
 
         glutPostRedisplay();
@@ -75,8 +75,8 @@ void onMotion(int x, int y) {
     lastY = y;
 
     if (isMoving) {
-        view.center.x -= dx * view.scale * 2 / width;
-        view.center.y += dy * view.scale * 2 / width;
+        view.center.real(view.center.real() - 2*dx*view.scale/width);
+        view.center.imag(view.center.imag() + 2*dy*view.scale/width);
         glutPostRedisplay();
     }
 }
@@ -124,7 +124,7 @@ void onReshape(int w, int h) {
 }
 
 int main(int argc, char **argv) {
-    view.center = { -0.7, 0 };
+    view.center = -0.7;
     view.scale = 1.5;
 
     glutInit(&argc, argv);
