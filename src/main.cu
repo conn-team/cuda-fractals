@@ -20,10 +20,10 @@ int lastX, lastY;
 bool isMoving = false;
 
 void updateTitle() {
-    char title[256];
-    mpf_class zoom = 1 / view.scale;
-    gmp_snprintf(title, sizeof(title), "cuda-fractals (zoom: %FE)", zoom.get_mpf_t());
-    glutSetWindowTitle(title);
+    std::ostringstream tmp;
+    tmp << "cuda-fractals (zoom: " << (1 / view.scale) << ")";
+    std::string title = tmp.str();
+    glutSetWindowTitle(title.c_str());
 }
 
 void onRender() {

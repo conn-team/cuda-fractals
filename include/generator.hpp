@@ -2,11 +2,13 @@
 
 #include <complex>
 #include <cstdint>
-#include <gmpxx.h>
+#include <boost/multiprecision/mpfr.hpp>
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
 #include "color.hpp"
+
+using namespace boost::multiprecision;
 
 struct RefPointInfo {
     Complex<double> value;
@@ -86,7 +88,7 @@ private:
             if (i > 0) {
                 cur = params.step(center, cur);
             }
-            vec[i].value = Complex<double>(cur.real().get_d(), cur.imag().get_d());
+            vec[i].value = Complex<double>(double(cur.real()), double(cur.imag()));
         }
 
         return vec;
@@ -107,7 +109,7 @@ public:
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
-        info.scale = mpf_class(scale * 2 / width).get_d();
+        info.scale = double(scale * 2 / width);
 
         renderImageKernel<<<nBlocks, blockSize>>>(info);
     }
@@ -117,6 +119,6 @@ private:
 public:
     Color *devImage;
     int maxIters, width, height;
-    std::complex<mpf_class> center;
-    mpf_class scale;
+    std::complex<mpfr_float> center;
+    mpfr_float scale;
 };

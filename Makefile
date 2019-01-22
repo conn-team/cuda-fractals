@@ -24,7 +24,7 @@ NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
 override LD_FLAGS += --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
-LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lgmp
+LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lmpfr
 LD=nvcc
 
 all: $(BIN_DIR)/$(TARGET)
