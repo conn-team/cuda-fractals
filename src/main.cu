@@ -7,7 +7,7 @@
 #include "cuda_helper.hpp"
 #include "generator.hpp"
 
-constexpr double SUPERSAMPLING_RATIO = 2;
+constexpr double SUPERSAMPLING_RATIO = 1;
 constexpr double ZOOM_SPEED = 1.2;
 
 struct cudaGraphicsResource *cudaViewBuffer;
