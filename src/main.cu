@@ -19,6 +19,13 @@ int width, height;
 int lastX, lastY;
 bool isMoving = false;
 
+void updateTitle() {
+    char title[256];
+    mpf_class zoom = 1 / view.scale;
+    gmp_snprintf(title, sizeof(title), "cuda-fractals (zoom: %FE)", zoom.get_mpf_t());
+    glutSetWindowTitle(title);
+}
+
 void onRender() {
     // Map PBO to CUDA
     size_t mappedSize;
@@ -64,6 +71,7 @@ void onMouse(int button, int state, int x, int y) {
         view.center.imag(view.center.imag() + dy*(zoom-1)*view.scale);
         view.scale *= zoom;
 
+        updateTitle();
         glutPostRedisplay();
     } else if (button == GLUT_LEFT_BUTTON) {
         isMoving = (state == GLUT_DOWN);
@@ -136,6 +144,7 @@ int main(int argc, char **argv) {
     glutCreateWindow("cuda-fractals");
 
     glewInit();
+    updateTitle();
 
     glutDisplayFunc(onRender);
     glutMouseFunc(onMouse);
