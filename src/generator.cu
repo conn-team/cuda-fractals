@@ -1,5 +1,6 @@
 #include "generator.hpp"
 #include "cuda_helper.hpp"
+#include "color.hpp"
 
 struct ViewInfo {
     Color *image;
