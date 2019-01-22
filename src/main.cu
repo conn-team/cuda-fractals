@@ -6,6 +6,7 @@
 
 #include "cuda_helper.hpp"
 #include "generator.hpp"
+#include "mandelbrot.hpp"
 
 constexpr double SUPERSAMPLING_RATIO = 1;
 constexpr double ZOOM_SPEED = 1.2;
@@ -22,13 +23,13 @@ void onRender() {
     // Map PBO to CUDA
     size_t mappedSize;
     gpuErrchk(cudaGraphicsMapResources(1, &cudaViewBuffer, 0));
-    gpuErrchk(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&view.image), &mappedSize, cudaViewBuffer));
+    gpuErrchk(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&view.devImage), &mappedSize, cudaViewBuffer));
 
     // Render image
-    renderImage(view);
+    view.renderImage(Mandelbrot{});
 
     // Unmap PBO
-    view.image = nullptr;
+    view.devImage = nullptr;
     gpuErrchk(cudaGraphicsUnmapResources(1, &cudaViewBuffer, 0));
 
     // Copy PBO to texture
@@ -126,6 +127,7 @@ void onReshape(int w, int h) {
 int main(int argc, char **argv) {
     view.center = -0.7;
     view.scale = 1.5;
+    view.maxIters = 256;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);

@@ -1,17 +1,17 @@
 #pragma once
 
 struct Mandelbrot {
-    double bailout() {
-        return 2;
+    __both__ double bailoutSqr() const {
+        return 4;
     }
 
     template<typename T>
-    T step(T previous, T pos) {
-        return previous.sqr() + pos;
+    T step(T first, T previous) const {
+        return previous*previous + first;
     }
 
     template<typename T>
-    T relativeStep(T prevDelta, T prevReference, T relPos) {
-        return 2*prevDelta*prevReference + prevDelta*prevDelta + relPos;
+    __both__ T relativeStep(T firstDelta, T prevDelta, T prevReference) const {
+        return 2.0*prevDelta*prevReference + prevDelta*prevDelta + firstDelta;
     }
 };

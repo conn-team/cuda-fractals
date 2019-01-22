@@ -19,11 +19,11 @@ override CXX_FLAGS += -Wall -Wextra -std=c++11
 CXX_LIBS = -I./$(INC_DIR)
 CXX=g++
 
-override NVC_FLAGS += --compiler-options -Wall,-Wextra -std=c++11
+override NVC_FLAGS += --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
 NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
-override LD_FLAGS += --compiler-options -Wall,-Wextra -std=c++11
+override LD_FLAGS += --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
 LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lgmp
 LD=nvcc
 
