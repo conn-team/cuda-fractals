@@ -37,7 +37,11 @@ struct HSVAColor {
 
         int8_t sector = static_cast<int8_t>(h / 60.0);
         
-        int8_t x = sector % 2 - 1;
+        float x = h / 60;
+        while (x > 2) {
+            x -= 2;
+        }
+        x -= 1;
         if (x < 0) {
             x = -x;
         }

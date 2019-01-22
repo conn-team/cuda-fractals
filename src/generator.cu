@@ -32,7 +32,7 @@ __device__ Color getColor(int iters, int maxIters) {
         return Color(57 * scale, 57 * scale, 191 * scale);
     }
 
-    return HSVAColor((240 + 3 * iters) % 360, 0.7, 0.75).toRGBA();
+    return HSVAColor((240 + iters) % 360, 0.7, 0.75).toRGBA();
 }
 
 __global__ void renderImageKernel(ViewInfo info) {
@@ -44,7 +44,7 @@ __global__ void renderImageKernel(ViewInfo info) {
     Complex<double> pos{double(index % info.stride), double(index / info.stride)};
     pos = pos*info.scale + info.translation;
 
-    constexpr int maxIters = 128;
+    constexpr int maxIters = 512;
     int iters = mandelbrot(pos, maxIters);
     info.image[index] = getColor(iters, maxIters);
 }
