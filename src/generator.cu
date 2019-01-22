@@ -22,18 +22,22 @@ __device__ int mandelbrot(Complex<double> pos, int maxIters) {
 }
 
 __device__ Color getColor(int iters, int maxIters) {
+    constexpr Color initColor = Color(57, 57, 191);
     constexpr float itersThreshold = 12.0;
-    
+    constexpr float saturation = 0.55;
+    constexpr float value = 0.7;
+    constexpr int hueOffset = 240;
+
     if (iters == maxIters) {
         return Color(0, 0, 0);
     }
 
     if (iters <= itersThreshold) {
         float scale = iters / itersThreshold;
-        return Color(57 * scale, 57 * scale, 191 * scale);
+        return Color(initColor.r * scale, initColor.g * scale, initColor.b * scale);
     }
 
-    return HSVAColor((240 + iters) % 360, 0.55, 0.7).toRGBA();
+    return HSVAColor((hueOffset + iters) % 360, saturation, value).toRGBA();
 }
 
 __global__ void renderImageKernel(ViewInfo info) {

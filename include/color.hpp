@@ -1,5 +1,8 @@
 #pragma once
 
+#include "cuda_helper.hpp"
+#include <cstdint>
+
 struct Color {
     union {
         uint32_t value;
@@ -8,15 +11,15 @@ struct Color {
         };
     };
 
-    __both__ Color(uint32_t value = 0xFF000000) : value(value) {}
-    __both__ Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF) : r(r), g(g), b(b), a(a) {}
+    __both__ constexpr Color(uint32_t value = 0xFF000000) : value(value) {}
+    __both__ constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 0xFF) : r(r), g(g), b(b), a(a) {}
 };
 
 struct HSVAColor {
     float h, s, v, a;
 
-    __both__ HSVAColor(float h, float s, float v, float a = 1.0) : h(h), s(s), v(v), a(a) {}
-    __both__ HSVAColor(void) : HSVAColor(0.0, 0.0, 0.0) {}
+    __both__ constexpr HSVAColor(float h, float s, float v, float a = 1.0) : h(h), s(s), v(v), a(a) {}
+    __both__ constexpr HSVAColor(void) : HSVAColor(0.0, 0.0, 0.0) {}
 
     __both__ Color toRGBA() const {
         if (h < 0 || h > 360) {
