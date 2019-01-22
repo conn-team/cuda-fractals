@@ -34,31 +34,20 @@ struct HSVAColor {
         }
 
         float c = v * s;
+        float h2 = h / 60.0;
+        int8_t sector = static_cast<int8_t>(h2);
 
-        int8_t sector = static_cast<int8_t>(h / 60.0);
-        
-        float x = h / 60;
-        while (x > 2) {
-            x -= 2;
-        }
-        x -= 1;
-        if (x < 0) {
-            x = -x;
-        }
-        x = 1 - x;
+        float x = h2 - 2 * floor(h2 / 2) - 1;
+        x = c * (1 - (x < 0 ? -x : x));
         
         Color rgba;
 
-        if        (sector < 1)   { rgba = Color((c     + v - c) * 255.0, (c * x + v - c) * 255.0, (0     + v - c) * 255.0, a * 255.0); }
-        else if   (sector < 2)   { rgba = Color((c * x + v - c) * 255.0, (c     + v - c) * 255.0, (0     + v - c) * 255.0, a * 255.0); }
-        else if   (sector < 3)   { rgba = Color((0     + v - c) * 255.0, (c     + v - c) * 255.0, (c * x + v - c) * 255.0, a * 255.0); }
-        else if   (sector < 4)   { rgba = Color((0     + v - c) * 255.0, (c * x + v - c) * 255.0, (c     + v - c) * 255.0, a * 255.0); }
-        else if   (sector < 5)   { rgba = Color((c * x + v - c) * 255.0, (0     + v - c) * 255.0, (c     + v - c) * 255.0, a * 255.0); }
-        else /*if (sector < 6)*/ { rgba = Color((c     + v - c) * 255.0, (0     + v - c) * 255.0, (c * x + v - c) * 255.0, a * 255.0); }
-
-        rgba.r += v - c;
-        rgba.g += v - c;
-        rgba.b += v - c;
+        if        (sector < 1)   { rgba = Color(v           * 255.0, (x + v - c) * 255.0, (v - c)     * 255.0, a * 255.0); }
+        else if   (sector < 2)   { rgba = Color((x + v - c) * 255.0, v           * 255.0, (v - c)     * 255.0, a * 255.0); }
+        else if   (sector < 3)   { rgba = Color((v - c)     * 255.0, v           * 255.0, (x + v - c) * 255.0, a * 255.0); }
+        else if   (sector < 4)   { rgba = Color((v - c)     * 255.0, (x + v - c) * 255.0, v           * 255.0, a * 255.0); }
+        else if   (sector < 5)   { rgba = Color((x + v - c) * 255.0, (v - c)     * 255.0, v           * 255.0, a * 255.0); }
+        else /*if (sector < 6)*/ { rgba = Color(v           * 255.0, (v - c)     * 255.0, (x + v - c) * 255.0, a * 255.0); }
 
         return rgba;
     }
