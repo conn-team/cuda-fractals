@@ -15,19 +15,22 @@ CXX_OBJS = $(CXX_SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 NVC_OBJS = $(NVC_SOURCES:$(SRC_DIR)/%.cu=$(BUILD_DIR)/%.cu.o)
 
 # compilers
-CXX_FLAGS = -Wall -Wextra -std=c++11
+override CXX_FLAGS += -Wall -Wextra -std=c++11
 CXX_LIBS = -I./$(INC_DIR)
 CXX=g++
 
-NVC_FLAGS = --compiler-options -Wall,-Wextra -std=c++11
+override NVC_FLAGS += --compiler-options -Wall,-Wextra -std=c++11
 NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
-LD_FLAGS = --compiler-options -Wall,-Wextra -std=c++11
+override LD_FLAGS += --compiler-options -Wall,-Wextra -std=c++11
 LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lgmp
 LD=nvcc
 
 all: $(BIN_DIR)/$(TARGET)
+
+release:
+	make all CXX_FLAGS="-O3" NVC_FLAGS="-O3" LD_FLAGS="-O3"
 
 $(BIN_DIR)/$(TARGET): $(CXX_OBJS) $(NVC_OBJS)
 	$(LD) $^ $(LD_FLAGS) -o $@ $(LD_LIBS)
