@@ -20,9 +20,19 @@ __device__ int mandelbrot(Complex<double> pos, int maxIters) {
     return iters;
 }
 
-__device__ Color getColor(double i) {
-    int tmp = int(i * 255 * 5) % 256;
-    return Color(tmp, tmp, tmp);
+__device__ Color getColor(int iters, int maxIters) {
+    constexpr float itersThreshold = 12.0;
+    
+    if (iters == maxIters) {
+        return Color(0, 0, 0);
+    }
+
+    if (iters <= itersThreshold) {
+        float scale = iters / itersThreshold;
+        return Color(57 * scale, 57 * scale, 191 * scale);
+    }
+
+    return HSVAColor((240 + 3 * iters) % 360, 0.7, 0.75).toRGBA();
 }
 
 __global__ void renderImageKernel(ViewInfo info) {
@@ -36,7 +46,7 @@ __global__ void renderImageKernel(ViewInfo info) {
 
     constexpr int maxIters = 128;
     int iters = mandelbrot(pos, maxIters);
-    info.image[index] = (iters < maxIters ? getColor(double(iters) / maxIters) : Color(0, 0, 0));
+    info.image[index] = getColor(iters, maxIters);
 }
 
 void renderImage(const Viewport& view) {
