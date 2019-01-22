@@ -51,7 +51,7 @@ public:
 
         while (iters < maxIters) {
             auto ref = referenceData[iters].value;
-            if ((cur+ref).absSqr() >= bailout) {
+            if ((cur+ref).norm() >= bailout) {
                 break;
             }
 

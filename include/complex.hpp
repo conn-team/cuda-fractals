@@ -39,8 +39,12 @@ struct Complex {
         return *this;
     }
 
-    __both__ T absSqr() const {
+    __both__ T norm() const {
         return x*x + y*y;
+    }
+
+    __both__ T dot(const Complex& r) const {
+        return x*r.x + y*r.y;
     }
 };
 
