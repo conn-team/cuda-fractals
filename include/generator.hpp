@@ -6,6 +6,7 @@
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
+#include "color.hpp"
 
 struct Viewport {
     Color *image;
