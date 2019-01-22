@@ -32,7 +32,7 @@ __device__ Color getColor(int iters, int maxIters) {
         return Color(57 * scale, 57 * scale, 191 * scale);
     }
 
-    return HSVAColor((240 + iters) % 360, 0.7, 0.75).toRGBA();
+    return HSVAColor((240 + iters) % 360, 0.55, 0.7).toRGBA();
 }
 
 __global__ void renderImageKernel(ViewInfo info) {
