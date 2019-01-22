@@ -28,7 +28,7 @@ struct HSVAColor {
     __both__ HSVAColor(float h, float s, float v, float a = 1.0) : h(h), s(s), v(v), a(a) {}
     __both__ HSVAColor(void) : HSVAColor(0.0, 0.0, 0.0) {}
 
-    Color toRGBA() const {
+    __both__ Color toRGBA() const {
         if (h < 0 || h > 360) {
             return Color(0, 0, 0);
         }
