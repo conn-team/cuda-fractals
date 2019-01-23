@@ -170,12 +170,21 @@ public:
         std::cout << "Skipped " << info.minIters << " iterations (useSeriesApproximation=" << useSeriesApproximation << ")" << std::endl;
     }
 
+    double getScale() const {
+        return scale;
+    }
+
+    void setScale(double val) {
+        BigFloat::default_precision(10 - log10(val));
+        scale = val;
+    }
+
 private:
     CudaArray<RefPointInfo> devReferenceData;
+    double scale;
 public:
     Color *devImage;
     int maxIters, width, height;
     BigComplex center;
-    double scale;
     bool useSeriesApproximation{true};
 };

@@ -22,7 +22,7 @@ bool isMoving = false;
 
 void updateTitle() {
     std::ostringstream tmp;
-    tmp << "cuda-fractals (zoom: " << (1 / view.scale) << ", maxIters: " << view.maxIters << ")";
+    tmp << "cuda-fractals (zoom: " << (1 / view.getScale()) << ", maxIters: " << view.maxIters << ")";
     std::string title = tmp.str();
     glutSetWindowTitle(title.c_str());
 }
@@ -31,7 +31,7 @@ void printCoordinates() {
     std::cout << std::fixed << std::setprecision(100);
     std::cout << "center real: " << view.center.real() << std::endl;
     std::cout << "center imag: " << view.center.imag() << std::endl;
-    std::cout << "scale: " << view.scale << std::endl << std::endl;
+    std::cout << "scale: " << view.getScale() << std::endl << std::endl;
 }
 
 void onRender() {
@@ -75,9 +75,9 @@ void onMouse(int button, int state, int x, int y) {
         double dx = 2.0*x/width - 1;
         double dy = 2.0*y/width - double(height)/width;
 
-        view.center.real(view.center.real() - dx*(zoom-1)*view.scale);
-        view.center.imag(view.center.imag() + dy*(zoom-1)*view.scale);
-        view.scale *= zoom;
+        view.center.real(view.center.real() - dx*(zoom-1)*view.getScale());
+        view.center.imag(view.center.imag() + dy*(zoom-1)*view.getScale());
+        view.setScale(view.getScale() * zoom);
 
         updateTitle();
         glutPostRedisplay();
@@ -94,8 +94,8 @@ void onMotion(int x, int y) {
     lastY = y;
 
     if (isMoving) {
-        view.center.real(view.center.real() - 2*dx*view.scale/width);
-        view.center.imag(view.center.imag() + 2*dy*view.scale/width);
+        view.center.real(view.center.real() - 2*dx*view.getScale()/width);
+        view.center.imag(view.center.imag() + 2*dy*view.getScale()/width);
         glutPostRedisplay();
     }
 }
@@ -109,9 +109,9 @@ void onKeyboard(unsigned char key, int, int) {
 
 void onSpecialKeyboard(int key, int, int) {
     if (key == GLUT_KEY_UP) {
-        view.maxIters += 256;
+        view.maxIters += 250;
     } else if (key == GLUT_KEY_DOWN) {
-        view.maxIters = std::max(view.maxIters-256, 0);
+        view.maxIters = std::max(view.maxIters-250, 0);
     } else {
         return;
     }
@@ -163,9 +163,8 @@ void onReshape(int w, int h) {
 }
 
 int main(int argc, char **argv) {
-    mpfr_float::default_precision(50);
     view.center = -0.7;
-    view.scale = 1.5;
+    view.setScale(1.5);
     view.maxIters = 250;
 
     glutInit(&argc, argv);
