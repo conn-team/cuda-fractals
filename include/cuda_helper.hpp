@@ -50,7 +50,7 @@ public:
 
 	void get(std::vector<T>& vec) const {
 		vec.resize(len);
-		gpuErrchk(cudaMemcpy(vec.data(), ptr, len*sizeof(T)));
+		gpuErrchk(cudaMemcpy(vec.data(), ptr, len*sizeof(T), cudaMemcpyDeviceToHost));
 	}
 
 	T*       data()           { return ptr; }
@@ -61,4 +61,38 @@ public:
 private:
 	T *ptr{nullptr};
 	size_t len{0}, cap{0};
+};
+
+template<typename T>
+class CudaVar {
+public:
+	CudaVar() {
+		gpuErrchk(cudaMalloc(&ptr, sizeof(T)));
+	}
+
+	CudaVar(const T& elem) : CudaVar() {
+		set(elem);
+	}
+
+	~CudaVar() {
+		cudaFree(ptr);
+	}
+
+	CudaVar(const CudaVar& other) = delete;
+	CudaVar& operator=(const CudaVar& other) = delete;
+
+	void set(const T& elem) {
+		gpuErrchk(cudaMemcpy(ptr, &elem, sizeof(T), cudaMemcpyHostToDevice));
+	}
+
+	T get() const {
+		T ret;
+		gpuErrchk(cudaMemcpy(&ret, ptr, sizeof(T), cudaMemcpyDeviceToHost));
+		return ret;
+	}
+
+	T *pointer() { return ptr; }
+
+private:
+	T *ptr;
 };
