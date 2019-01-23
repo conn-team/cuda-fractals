@@ -44,8 +44,8 @@ public:
             return;
         }
 
-        double dx = x - double(width)/2, dy = y - double(height)/2;
-        Complex<double> pos{dx*scale, dy*scale};
+        Complex<double> pos = Complex<double>(x, y) - refPointScreen;
+        pos *= scale;
 
         Complex<double> cur = pos;
         double bailout = params.bailoutSqr();
@@ -69,6 +69,7 @@ public:
     Color *image;
     RefPointInfo *referenceData;
     int maxIters, width, height;
+    Complex<double> refPointScreen;
     double scale;
 };
 
@@ -80,18 +81,24 @@ __global__ static void renderImageKernel(RenderInfo<Fractal> info) {
 class Viewport {
 private:
     template<typename Fractal>
-    std::vector<RefPointInfo> buildReferenceData(const Fractal& params) {
-        std::vector<RefPointInfo> vec(maxIters);
-        auto cur = center;
+    int buildReferenceData(const Fractal& params, std::complex<mpfr_float> point, std::vector<RefPointInfo>& out) {
+        int iters = maxIters;
+        auto cur = point;
+        out.resize(maxIters);
 
         for (int i = 0; i < maxIters; i++) {
             if (i > 0) {
-                cur = params.step(center, cur);
+                cur = params.step(point, cur);
             }
-            vec[i].value = Complex<double>(double(cur.real()), double(cur.imag()));
+
+            out[i].value = Complex<double>(double(cur.real()), double(cur.imag()));
+
+            if (std::norm(cur) >= params.bailoutSqr()) {
+                iters = min(iters, i+1);
+            }
         }
 
-        return vec;
+        return iters;
     }
 
 public:
@@ -100,16 +107,20 @@ public:
         constexpr uint32_t blockSize = 1024;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
 
-        devReferenceData.assign(buildReferenceData(params));
-
         RenderInfo<Fractal> info;
         info.params = params;
         info.image = devImage;
-        info.referenceData = devReferenceData.data();
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
         info.scale = double(scale * 2 / width);
+
+        std::vector<RefPointInfo> refData;
+        buildReferenceData(params, center, refData);
+        devReferenceData.assign(refData);
+
+        info.referenceData = devReferenceData.data();
+        info.refPointScreen = Complex<double>(width, height) * 0.5;
 
         renderImageKernel<<<nBlocks, blockSize>>>(info);
     }
