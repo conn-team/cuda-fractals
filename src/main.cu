@@ -8,6 +8,7 @@
 #include "cuda_helper.hpp"
 #include "generator.hpp"
 #include "mandelbrot.hpp"
+#include "juliabuczek.hpp"
 
 constexpr double SUPERSAMPLING_RATIO = 1;
 constexpr double ZOOM_SPEED = 1.2;
@@ -41,7 +42,7 @@ void onRender() {
     gpuErrchk(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&view.devImage), &mappedSize, cudaViewBuffer));
 
     // Render image
-    view.renderImage(Mandelbrot{});
+    view.renderImage(JuliaBuczek({-0.8, 0.156}));
 
     // Unmap PBO
     view.devImage = nullptr;
