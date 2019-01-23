@@ -100,6 +100,16 @@ void onMotion(int x, int y) {
     }
 }
 
+void onKeyboard(int key, int x, int y) {
+    if (key == GLUT_KEY_UP) {
+        view.maxIters *= 2;
+        glutPostRedisplay();
+    } else if (key == GLUT_KEY_DOWN) {
+        view.maxIters /= 2;
+        glutPostRedisplay();
+    }
+}
+
 void onReshape(int w, int h) {
     width = w;
     height = h;
@@ -160,6 +170,7 @@ int main(int argc, char **argv) {
     glutMouseFunc(onMouse);
     glutMotionFunc(onMotion);
     glutPassiveMotionFunc(onMotion);
+    glutSpecialFunc(onKeyboard);
     glutReshapeFunc(onReshape);
     glutMainLoop();
     return 0;
