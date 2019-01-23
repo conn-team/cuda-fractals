@@ -24,7 +24,7 @@ struct JuliaBuczek {
     CubicSeries<T> seriesStep(CubicSeries<T> prevSeries, T prevReference) const {
         return {
             T(2.0)*prevReference*prevSeries[0],
-            T(2.0)*prevReference*prevSeries[1] + prevSeries[0],
+            T(2.0)*prevReference*prevSeries[1] + prevSeries[0]*prevSeries[0],
             T(2.0)*prevReference*prevSeries[2] + T(2.0)*prevSeries[0]*prevSeries[1]
         };
     }
