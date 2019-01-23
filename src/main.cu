@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstdio>
+#include <iostream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cuda_gl_interop.h>
@@ -24,6 +25,13 @@ void updateTitle() {
     tmp << "cuda-fractals (zoom: " << (1 / view.scale) << ")";
     std::string title = tmp.str();
     glutSetWindowTitle(title.c_str());
+}
+
+void printCoordinates() {
+    std::cout << std::fixed << std::setprecision(100);
+    std::cout << "center real: " << view.center.real() << std::endl;
+    std::cout << "center imag: " << view.center.imag() << std::endl;
+    std::cout << "scale: " << view.scale << std::endl << std::endl;
 }
 
 void onRender() {
@@ -75,6 +83,8 @@ void onMouse(int button, int state, int x, int y) {
         glutPostRedisplay();
     } else if (button == GLUT_LEFT_BUTTON) {
         isMoving = (state == GLUT_DOWN);
+    } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        printCoordinates();
     }
 }
 
