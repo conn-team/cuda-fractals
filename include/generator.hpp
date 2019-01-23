@@ -2,16 +2,16 @@
 
 #include <complex>
 #include <cstdint>
-#include <boost/multiprecision/mpfr.hpp>
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
 #include "color.hpp"
-
-using namespace boost::multiprecision;
+#include "series.hpp"
+#include "bignum.hpp"
 
 struct RefPointInfo {
     Complex<double> value;
+    CubicSeries<Complex<double>> series;
 };
 
 template<typename Fractal>
@@ -47,9 +47,9 @@ public:
         Complex<double> pos = Complex<double>(x, y) - refPointScreen;
         pos *= scale;
 
-        Complex<double> cur = pos;
         double bailout = params.bailoutSqr();
-        int iters = 0;
+        int iters = minIters;
+        Complex<double> cur = referenceData[iters].series.eval(pos);
 
         while (iters < maxIters) {
             auto ref = referenceData[iters].value;
@@ -68,7 +68,7 @@ public:
     Fractal params;
     Color *image;
     RefPointInfo *referenceData;
-    int maxIters, width, height;
+    int minIters, maxIters, width, height;
     Complex<double> refPointScreen;
     double scale;
 };
@@ -78,20 +78,44 @@ __global__ static void renderImageKernel(RenderInfo<Fractal> info) {
     info.render();
 }
 
+Complex<double> downgradeComplex(const BigComplex& x) {
+    return Complex<double>(double(x.real()), double(x.imag()));
+}
+
 class Viewport {
 private:
     template<typename Fractal>
-    int buildReferenceData(const Fractal& params, std::complex<mpfr_float> point, std::vector<RefPointInfo>& out) {
+    int getIterations(const Fractal& params, BigComplex point) {
         int iters = maxIters;
         auto cur = point;
+
+        for (int i = 0; i < maxIters; i++) {
+            if (std::norm(cur) >= params.bailoutSqr()) {
+                return i;
+            }
+            cur = params.step(point, cur);
+        }
+
+        return iters;
+    }
+
+    template<typename Fractal>
+    int buildReferenceData(const Fractal& params, BigComplex point, std::vector<RefPointInfo>& out) {
+        int iters = maxIters;
+        auto cur = point;
+        CubicSeries<BigComplex> series{BigComplex(1), BigComplex(0), BigComplex(0)};
         out.resize(maxIters);
 
         for (int i = 0; i < maxIters; i++) {
             if (i > 0) {
+                series = params.seriesStep(series, cur);
                 cur = params.step(point, cur);
             }
 
-            out[i].value = Complex<double>(double(cur.real()), double(cur.imag()));
+            out[i].value = downgradeComplex(cur);
+            for (int j = 0; j < 3; j++) {
+                out[i].series[j] = downgradeComplex(series[j]);
+            }
 
             if (std::norm(cur) >= params.bailoutSqr()) {
                 iters = min(iters, i+1);
@@ -110,6 +134,7 @@ public:
         RenderInfo<Fractal> info;
         info.params = params;
         info.image = devImage;
+        info.minIters = minIters;
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
@@ -129,7 +154,7 @@ private:
     CudaArray<RefPointInfo> devReferenceData;
 public:
     Color *devImage;
-    int maxIters, width, height;
-    std::complex<mpfr_float> center;
-    mpfr_float scale;
+    int minIters, maxIters, width, height;
+    BigComplex center;
+    BigFloat scale;
 };
