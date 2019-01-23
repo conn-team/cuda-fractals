@@ -123,7 +123,7 @@ private:
                 break;
             }
 
-            DevComplex approx = ref.series.evalHost(delta);
+            DevComplex approx = ref.series.eval(delta);
             double error = 1 - max(abs(approx.x / cur.x), abs(approx.y / cur.y));
             if (error > MAX_ERROR) {
                 break;
@@ -147,7 +147,7 @@ public:
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
-        info.scale = double(scale * 2 / width);
+        info.scale = scale * 2 / width;
 
         std::vector<RefPointInfo> refData;
         buildReferenceData(params, center, refData);
@@ -157,11 +157,10 @@ public:
         info.refPointScreen = DevComplex(width, height) * 0.5;
 
         if (useSeriesApproximation) {
-            double dScale = double(scale);
-            info.minIters = computeMinIterations(params, {-dScale, 0}, refData);
-            info.minIters = min(info.minIters, computeMinIterations(params, {dScale, 0}, refData));
-            info.minIters = min(info.minIters, computeMinIterations(params, {0, -dScale}, refData));
-            info.minIters = min(info.minIters, computeMinIterations(params, {0, dScale}, refData));
+            info.minIters = computeMinIterations(params, {-scale, 0}, refData);
+            info.minIters = min(info.minIters, computeMinIterations(params, {scale, 0}, refData));
+            info.minIters = min(info.minIters, computeMinIterations(params, {0, -scale}, refData));
+            info.minIters = min(info.minIters, computeMinIterations(params, {0, scale}, refData));
             info.minIters = max(info.minIters-20, 0);
         } else {
             info.minIters = 0;
@@ -177,6 +176,6 @@ public:
     Color *devImage;
     int maxIters, width, height;
     BigComplex center;
-    BigFloat scale;
+    double scale;
     bool useSeriesApproximation{true};
 };
