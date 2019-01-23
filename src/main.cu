@@ -22,7 +22,7 @@ bool isMoving = false;
 
 void updateTitle() {
     std::ostringstream tmp;
-    tmp << "cuda-fractals (zoom: " << (1 / view.scale) << ", minIters: " << view.minIters << ", maxIters: " << view.maxIters << ")";
+    tmp << "cuda-fractals (zoom: " << (1 / view.scale) << ", maxIters: " << view.maxIters << ")";
     std::string title = tmp.str();
     glutSetWindowTitle(title.c_str());
 }
@@ -100,15 +100,18 @@ void onMotion(int x, int y) {
     }
 }
 
-void onKeyboard(int key, int, int) {
+void onKeyboard(unsigned char key, int, int) {
+    if (key == 's') {
+        view.useSeriesApproximation = !view.useSeriesApproximation;
+        glutPostRedisplay();
+    }
+}
+
+void onSpecialKeyboard(int key, int, int) {
     if (key == GLUT_KEY_UP) {
         view.maxIters += 256;
     } else if (key == GLUT_KEY_DOWN) {
         view.maxIters = std::max(view.maxIters-256, 0);
-    } else if (key == GLUT_KEY_LEFT) {
-        view.minIters = std::max(view.minIters-256, 0);
-    } else if (key == GLUT_KEY_RIGHT) {
-        view.minIters += 256;
     } else {
         return;
     }
@@ -162,8 +165,7 @@ void onReshape(int w, int h) {
 int main(int argc, char **argv) {
     view.center = -0.7;
     view.scale = 1.5;
-    view.minIters = 0;
-    view.maxIters = 256;
+    view.maxIters = 250;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
@@ -178,7 +180,8 @@ int main(int argc, char **argv) {
     glutMouseFunc(onMouse);
     glutMotionFunc(onMotion);
     glutPassiveMotionFunc(onMotion);
-    glutSpecialFunc(onKeyboard);
+    glutKeyboardFunc(onKeyboard);
+    glutSpecialFunc(onSpecialKeyboard);
     glutReshapeFunc(onReshape);
     glutMainLoop();
     return 0;

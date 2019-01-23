@@ -2,6 +2,7 @@
 
 #include <complex>
 #include <cstdint>
+#include <iostream>
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
@@ -85,22 +86,7 @@ Complex<double> downgradeComplex(const BigComplex& x) {
 class Viewport {
 private:
     template<typename Fractal>
-    int getIterations(const Fractal& params, BigComplex point) {
-        int iters = maxIters;
-        auto cur = point;
-
-        for (int i = 0; i < maxIters; i++) {
-            if (std::norm(cur) >= params.bailoutSqr()) {
-                return i;
-            }
-            cur = params.step(point, cur);
-        }
-
-        return iters;
-    }
-
-    template<typename Fractal>
-    int buildReferenceData(const Fractal& params, BigComplex point, std::vector<RefPointInfo>& out) {
+    int buildReferenceData(const Fractal& params, const BigComplex& point, std::vector<RefPointInfo>& out) {
         int iters = maxIters;
         auto cur = point;
         CubicSeries<BigComplex> series{BigComplex(1), BigComplex(0), BigComplex(0)};
@@ -125,6 +111,30 @@ private:
         return iters;
     }
 
+    template<typename Fractal>
+    int computeMinIterations(const Fractal& params, Complex<double> delta, const std::vector<RefPointInfo>& refData) {
+        constexpr double MAX_ERROR = 0.002;
+        int iters = 0;
+        Complex<double> cur = delta;
+
+        while (iters < maxIters) {
+            auto& ref = refData[iters];
+            if ((cur+ref.value).norm() >= params.bailoutSqr()) {
+                break;
+            }
+
+            Complex<double> approx = ref.series.evalHost(delta);
+            double error = 1 - max(abs(approx.x / cur.x), abs(approx.y / cur.y));
+            if (error > MAX_ERROR) {
+                break;
+            }
+
+            cur = params.relativeStep(delta, cur, ref.value);
+            iters++;
+        }
+        return iters;
+    }
+
 public:
     template<typename Fractal>
     void renderImage(const Fractal& params) {
@@ -134,7 +144,6 @@ public:
         RenderInfo<Fractal> info;
         info.params = params;
         info.image = devImage;
-        info.minIters = minIters;
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
@@ -147,14 +156,27 @@ public:
         info.referenceData = devReferenceData.data();
         info.refPointScreen = Complex<double>(width, height) * 0.5;
 
+        if (useSeriesApproximation) {
+            double dScale = double(scale);
+            info.minIters = computeMinIterations(params, {-dScale, 0}, refData);
+            info.minIters = min(info.minIters, computeMinIterations(params, {dScale, 0}, refData));
+            info.minIters = min(info.minIters, computeMinIterations(params, {0, -dScale}, refData));
+            info.minIters = min(info.minIters, computeMinIterations(params, {0, dScale}, refData));
+            info.minIters = max(info.minIters-20, 0);
+        } else {
+            info.minIters = 0;
+        }
+
         renderImageKernel<<<nBlocks, blockSize>>>(info);
+        std::cout << "Skipped " << info.minIters << " iterations (useSeriesApproximation=" << useSeriesApproximation << ")" << std::endl;
     }
 
 private:
     CudaArray<RefPointInfo> devReferenceData;
 public:
     Color *devImage;
-    int minIters, maxIters, width, height;
+    int maxIters, width, height;
     BigComplex center;
     BigFloat scale;
+    bool useSeriesApproximation{true};
 };
