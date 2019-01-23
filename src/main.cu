@@ -42,7 +42,7 @@ void onRender() {
     gpuErrchk(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&view.devImage), &mappedSize, cudaViewBuffer));
 
     // Render image
-    view.renderImage(JuliaBuczek({-0.8, 0.156}));
+    view.renderImage(Mandelbrot{});
 
     // Unmap PBO
     view.devImage = nullptr;
