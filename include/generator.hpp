@@ -11,8 +11,8 @@
 #include "bignum.hpp"
 
 struct RefPointInfo {
-    Complex<double> value;
-    CubicSeries<Complex<double>> series;
+    DevComplex value;
+    CubicSeries<DevComplex> series;
 };
 
 template<typename Fractal>
@@ -45,12 +45,12 @@ public:
             return;
         }
 
-        Complex<double> pos = Complex<double>(x, y) - refPointScreen;
+        DevComplex pos = DevComplex(x, y) - refPointScreen;
         pos *= scale;
 
         double bailout = params.bailoutSqr();
         int iters = minIters;
-        Complex<double> cur = referenceData[iters].series.eval(pos);
+        DevComplex cur = referenceData[iters].series.eval(pos);
 
         while (iters < maxIters) {
             auto ref = referenceData[iters].value;
@@ -70,7 +70,7 @@ public:
     Color *image;
     RefPointInfo *referenceData;
     int minIters, maxIters, width, height;
-    Complex<double> refPointScreen;
+    DevComplex refPointScreen;
     double scale;
 };
 
@@ -79,8 +79,8 @@ __global__ static void renderImageKernel(RenderInfo<Fractal> info) {
     info.render();
 }
 
-Complex<double> downgradeComplex(const BigComplex& x) {
-    return Complex<double>(double(x.real()), double(x.imag()));
+DevComplex downgradeComplex(const BigComplex& x) {
+    return DevComplex(double(x.real()), double(x.imag()));
 }
 
 class Viewport {
@@ -89,18 +89,18 @@ private:
     int buildReferenceData(const Fractal& params, const BigComplex& point, std::vector<RefPointInfo>& out) {
         int iters = maxIters;
         auto cur = point;
-        CubicSeries<BigComplex> series{BigComplex(1), BigComplex(0), BigComplex(0)};
+        CubicSeries<DevComplex> series{1, 0, 0};
         out.resize(maxIters);
 
         for (int i = 0; i < maxIters; i++) {
             if (i > 0) {
-                series = params.seriesStep(series, cur);
+                series = params.seriesStep(series, downgradeComplex(cur));
                 cur = params.step(point, cur);
             }
 
             out[i].value = downgradeComplex(cur);
             for (int j = 0; j < 3; j++) {
-                out[i].series[j] = downgradeComplex(series[j]);
+                out[i].series[j] = series[j];
             }
 
             if (std::norm(cur) >= params.bailoutSqr()) {
@@ -112,10 +112,10 @@ private:
     }
 
     template<typename Fractal>
-    int computeMinIterations(const Fractal& params, Complex<double> delta, const std::vector<RefPointInfo>& refData) {
+    int computeMinIterations(const Fractal& params, DevComplex delta, const std::vector<RefPointInfo>& refData) {
         constexpr double MAX_ERROR = 0.002;
         int iters = 0;
-        Complex<double> cur = delta;
+        DevComplex cur = delta;
 
         while (iters < maxIters) {
             auto& ref = refData[iters];
@@ -123,7 +123,7 @@ private:
                 break;
             }
 
-            Complex<double> approx = ref.series.evalHost(delta);
+            DevComplex approx = ref.series.evalHost(delta);
             double error = 1 - max(abs(approx.x / cur.x), abs(approx.y / cur.y));
             if (error > MAX_ERROR) {
                 break;
@@ -154,7 +154,7 @@ public:
         devReferenceData.assign(refData);
 
         info.referenceData = devReferenceData.data();
-        info.refPointScreen = Complex<double>(width, height) * 0.5;
+        info.refPointScreen = DevComplex(width, height) * 0.5;
 
         if (useSeriesApproximation) {
             double dScale = double(scale);

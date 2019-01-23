@@ -11,11 +11,7 @@ struct CubicSeries {
 
     T& operator[](int i) { return data[i]; }
 
-    __host__ T evalHost(T x) const {
-        return ((data[2]*x + data[1])*x + data[0])*x;
-    }
-
-    __device__ T eval(T x) const {
+    __both__ T eval(T x) const {
         return ((data[2]*x + data[1])*x + data[0])*x;
     }
 };
