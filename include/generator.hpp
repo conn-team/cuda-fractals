@@ -38,6 +38,10 @@ private:
     }
 
 public:
+    __both__ DevComplex screenToDelta(int x, int y) {
+        return (DevComplex(x, y) - refPointScreen) * scale;
+    }
+
     __device__ void render() {
         int index = blockIdx.x*blockDim.x + threadIdx.x;
         int x = index % width, y = index / width;
@@ -45,16 +49,13 @@ public:
             return;
         }
 
-        DevComplex pos = DevComplex(x, y) - refPointScreen;
-        pos *= scale;
-
-        double bailout = params.bailoutSqr();
+        DevComplex pos = screenToDelta(x, y);
         int iters = minIters;
         DevComplex cur = referenceData[iters].series.eval(pos);
 
         while (iters < maxIters) {
             auto ref = referenceData[iters].value;
-            if ((cur+ref).norm() >= bailout) {
+            if ((cur+ref).norm() >= params.bailoutSqr()) {
                 break;
             }
 
@@ -81,6 +82,10 @@ __global__ static void renderImageKernel(RenderInfo<Fractal> info) {
 
 DevComplex downgradeComplex(const BigComplex& x) {
     return DevComplex(double(x.real()), double(x.imag()));
+}
+
+BigComplex upgradeComplex(const DevComplex& c) {
+    return BigComplex(BigFloat(c.x), BigFloat(c.y));
 }
 
 class Viewport {
