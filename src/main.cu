@@ -163,6 +163,7 @@ void onReshape(int w, int h) {
 }
 
 int main(int argc, char **argv) {
+    mpfr_float::default_precision(50);
     view.center = -0.7;
     view.scale = 1.5;
     view.maxIters = 250;
