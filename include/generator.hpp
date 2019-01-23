@@ -53,13 +53,25 @@ public:
         int iters = minIters;
         DevComplex cur = referenceData[iters].series.eval(pos);
 
-        while (iters < maxIters) {
+        while (iters+1 < approxIters) {
             auto ref = referenceData[iters].value;
             if ((cur+ref).norm() >= params.bailoutSqr()) {
                 break;
             }
 
             cur = params.relativeStep(pos, cur, ref);
+            iters++;
+        }
+
+        pos += referenceData[0].value;
+        cur += referenceData[iters].value;
+
+        while (iters < maxIters) {
+            if (cur.norm() >= params.bailoutSqr()) {
+                break;
+            }
+
+            cur = params.relativeStep(pos, cur, DevComplex(0, 0));
             iters++;
         }
 
@@ -70,7 +82,7 @@ public:
     Fractal params;
     Color *image;
     RefPointInfo *referenceData;
-    int minIters, maxIters, width, height;
+    int minIters, maxIters, approxIters, width, height;
     DevComplex refPointScreen;
     double scale;
 };
@@ -155,7 +167,7 @@ public:
         info.scale = scale * 2 / width;
 
         std::vector<RefPointInfo> refData;
-        buildReferenceData(params, center, refData);
+        info.approxIters = buildReferenceData(params, center, refData);
         devReferenceData.assign(refData);
 
         info.referenceData = devReferenceData.data();
