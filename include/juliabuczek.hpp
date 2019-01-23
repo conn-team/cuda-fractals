@@ -4,7 +4,7 @@
 #include "series.hpp"
 
 struct JuliaBuczek {
-    JuliaBuczek(std::complex<double> seed = {-0.8, 0.156}) : seed(seed) {}
+    JuliaBuczek(DevComplex seed = {-0.8, 0.156}) : seed(seed) {}
 
     __both__ double bailoutSqr() const {
         return 4;
@@ -12,7 +12,7 @@ struct JuliaBuczek {
 
     template<typename T>
     T step(T, T previous) const {
-        return previous*previous + T(seed.real(), seed.imag());
+        return previous*previous + T(seed.x, seed.y);
     }
 
     template<typename T>
@@ -29,6 +29,5 @@ struct JuliaBuczek {
         };
     }
 
-private:
-    std::complex<double> seed;
+    DevComplex seed;
 };
