@@ -27,17 +27,16 @@ private:
             {0, 0, 0},
             {200, 0, 0},
             {200, 200, 0},
-            {200, 0, 0},
+            {0, 200, 200},
+            {0, 0, 200},
         };
 
-        float subIters = iters % 128;
-        subIters /= 32.f;
+        float subIters = iters % 160 / 32.f;
 
-        int c0 = floor(subIters - 4.0f * floor(subIters / 4.0f));
-        int c1 = ceil (subIters - 4.0f * floor(subIters / 4.0f));
+        int c0 = floor(subIters - 5.0f * floor(subIters / 5.0f));
+        int c1 = ceil (subIters - 5.0f * floor(subIters / 5.0f));
         float t = subIters - c0;
-        c0 %= 4;
-        c1 %= 4;
+        c1 %= 5;
 
         return {
             static_cast<uint8_t>((1.0f - t) * colors[c0].r + t * colors[c1].r),
