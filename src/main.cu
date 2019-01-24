@@ -21,6 +21,11 @@ int width, height;
 int lastX, lastY;
 bool isMoving = false;
 
+const int fractals = 2;
+Mandelbrot mandelbrot;
+JuliaBuczek juliabuczek;
+int fractalIdx = 0;
+
 void updateTitle() {
     std::ostringstream tmp;
     tmp << "cuda-fractals (zoom: " << (1 / view.getScale()) << ", maxIters: " << view.maxIters << ")";
@@ -43,7 +48,10 @@ void onRender() {
     gpuErrchk(cudaGraphicsResourceGetMappedPointer(reinterpret_cast<void**>(&view.devImage), &mappedSize, cudaViewBuffer));
 
     // Render image
-    view.renderImage(Mandelbrot{});
+    switch (fractalIdx) {
+        case 0: view.renderImage(mandelbrot); break;
+        case 1: view.renderImage(juliabuczek); break;
+    }
 
     // Unmap PBO
     view.devImage = nullptr;
@@ -105,8 +113,15 @@ void onMotion(int x, int y) {
 void onKeyboard(unsigned char key, int, int) {
     if (key == 's') {
         view.useSeriesApproximation = !view.useSeriesApproximation;
-        glutPostRedisplay();
+    } else if (key == 'i') {
+        view.useSubIters = !view.useSubIters;
+    } else if (key == 'r') {
+        view.center = -0.7;
+        view.setScale(1.5);
+        view.maxIters = 250;    
     }
+    
+    glutPostRedisplay();
 }
 
 void onSpecialKeyboard(int key, int, int) {
@@ -114,6 +129,12 @@ void onSpecialKeyboard(int key, int, int) {
         view.maxIters += 250;
     } else if (key == GLUT_KEY_DOWN) {
         view.maxIters = std::max(view.maxIters-250, 0);
+    } else if (key == GLUT_KEY_RIGHT) {
+        fractalIdx = (fractalIdx + 1) % fractals;
+    } else if (key == GLUT_KEY_LEFT) {
+        if (--fractalIdx < 0) {
+            fractalIdx = fractals - 1;
+        }
     } else {
         return;
     }

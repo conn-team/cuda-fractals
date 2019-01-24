@@ -8,7 +8,7 @@ struct Mandelbrot {
     }
 
     template<typename T>
-    T step(T first, T previous) const {
+    __both__ T step(T first, T previous) const {
         return previous*previous + first;
     }
 

@@ -18,7 +18,7 @@ struct RefPointInfo {
 template<typename Fractal>
 class RenderInfo {
 private:
-    __device__ Color getColor(int iters) {
+    __device__ Color getColor(int iters, DevComplex end) {
         if (iters == maxIters) {
             return Color(0, 0, 0);
         }
@@ -31,7 +31,14 @@ private:
             {0, 0, 200},
         };
 
-        float subIters = iters % 160 / 32.f;
+        float subIters = iters % 160;
+        if (useSubIters) {
+            subIters += 2 - log10f(end.norm()) / log10f(4.0f);
+            if ((subIters = max(0.0f, subIters)) > 160.f) {
+                subIters -= 160.f;
+            }
+        }
+        subIters /= 32.f;
 
         int c0 = floor(subIters - 5.0f * floor(subIters / 5.0f));
         int c1 = ceil (subIters - 5.0f * floor(subIters / 5.0f));
@@ -79,11 +86,11 @@ public:
                 break;
             }
 
-            cur = params.relativeStep(pos, cur, DevComplex(0, 0));
+            cur = params.step(pos, cur);
             iters++;
         }
 
-        image[index] = getColor(iters);
+        image[index] = getColor(iters, cur);
     }
 
 public:
@@ -92,6 +99,7 @@ public:
     RefPointInfo *referenceData;
     int minIters, maxIters, approxIters, width, height;
     DevComplex refPointScreen;
+    bool useSubIters;
     double scale;
 };
 
@@ -172,6 +180,7 @@ public:
         info.maxIters = maxIters;
         info.width = width;
         info.height = height;
+        info.useSubIters = useSubIters;
         info.scale = scale * 2 / width;
 
         std::vector<RefPointInfo> refData;
@@ -219,4 +228,5 @@ public:
     int maxIters, width, height;
     BigComplex center;
     bool useSeriesApproximation{true};
+    bool useSubIters{false};
 };

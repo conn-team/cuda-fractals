@@ -11,7 +11,7 @@ struct JuliaBuczek {
     }
 
     template<typename T>
-    T step(T, T previous) const {
+    __both__ T step(T, T previous) const {
         return previous*previous + T(seed.x, seed.y);
     }
 
