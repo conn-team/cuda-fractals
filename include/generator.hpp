@@ -192,7 +192,14 @@ public:
     }
 
     void setScale(double val) {
-        BigFloat::default_precision(10 - log10(val));
+        const unsigned digits10 = ceil(10 - log10(val));
+        BigFloat::default_precision(digits10);
+        
+        // force update of center's precision
+        center = BigComplex(
+            BigFloat(center.real(), digits10),
+            BigFloat(center.imag(), digits10));
+        
         scale = val;
     }
 
