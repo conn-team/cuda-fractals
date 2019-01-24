@@ -29,9 +29,10 @@ void updateTitle() {
 }
 
 void printCoordinates() {
-    std::cout << std::fixed << std::setprecision(100);
+    std::cout << std::fixed << std::setprecision(std::max(0L, lround(-log10(view.getScale()))) + 5);
     std::cout << "center real: " << view.center.real() << std::endl;
     std::cout << "center imag: " << view.center.imag() << std::endl;
+    std::cout << std::scientific << std::setprecision(5);
     std::cout << "scale: " << view.getScale() << std::endl << std::endl;
 }
 
