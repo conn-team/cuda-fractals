@@ -30,7 +30,7 @@ private:
             {200, 0, 0},
         };
 
-        float subIters = iters;
+        float subIters = iters % 128;
         subIters /= 32.f;
 
         int c0 = floor(subIters - 4.0f * floor(subIters / 4.0f));
