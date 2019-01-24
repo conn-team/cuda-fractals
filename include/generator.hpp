@@ -40,9 +40,9 @@ private:
         c1 %= 4;
 
         return {
-            (1.0f - t) * colors[c0].r + t * colors[c1].r,
-            (1.0f - t) * colors[c0].g + t * colors[c1].g,
-            (1.0f - t) * colors[c0].b + t * colors[c1].b
+            static_cast<uint8_t>((1.0f - t) * colors[c0].r + t * colors[c1].r),
+            static_cast<uint8_t>((1.0f - t) * colors[c0].g + t * colors[c1].g),
+            static_cast<uint8_t>((1.0f - t) * colors[c0].b + t * colors[c1].b)
         };
     }
 
