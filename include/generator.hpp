@@ -19,22 +19,31 @@ template<typename Fractal>
 class RenderInfo {
 private:
     __device__ Color getColor(int iters) {
-        constexpr Color initColor = Color(57, 57, 191);
-        constexpr float itersThreshold = 12.0;
-        constexpr float saturation = 0.55;
-        constexpr float value = 0.7;
-        constexpr int hueOffset = 240;
-
         if (iters == maxIters) {
             return Color(0, 0, 0);
         }
 
-        if (iters <= itersThreshold) {
-            float scale = iters / itersThreshold;
-            return Color(initColor.r * scale, initColor.g * scale, initColor.b * scale);
-        }
+        Color colors[] = {
+            {0, 0, 0},
+            {200, 0, 0},
+            {200, 200, 0},
+            {200, 0, 0},
+        };
 
-        return HSVAColor((hueOffset + iters) % 360, saturation, value).toRGBA();
+        float subIters = iters;
+        subIters /= 32.f;
+
+        int c0 = floor(subIters - 4.0f * floor(subIters / 4.0f));
+        int c1 = ceil (subIters - 4.0f * floor(subIters / 4.0f));
+        float t = subIters - c0;
+        c0 %= 4;
+        c1 %= 4;
+
+        return {
+            (1.0f - t) * colors[c0].r + t * colors[c1].r,
+            (1.0f - t) * colors[c0].g + t * colors[c1].g,
+            (1.0f - t) * colors[c0].b + t * colors[c1].b
+        };
     }
 
 public:
