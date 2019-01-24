@@ -4,7 +4,7 @@
 #include "series.hpp"
 
 struct JuliaBuczek {
-    JuliaBuczek(DevComplex seed = {-0.8, 0.156}) : seed(seed) {}
+    JuliaBuczek(DevComplex seed = {-0.8, 0.2}) : seed(seed) {}
 
     __both__ double bailoutSqr() const {
         return 4;
