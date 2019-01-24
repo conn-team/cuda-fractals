@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "cuda_helper.hpp"
 
 template<typename T>
@@ -51,3 +52,8 @@ template<typename T>
 __both__ Complex<T> operator*(const T& l, const Complex<T>& r) { return r*l; }
 
 using DevComplex = Complex<double>;
+
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const Complex<T>& r) {
+    return out << r.x << "+" << r.y << "i";
+}
