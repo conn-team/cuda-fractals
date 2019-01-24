@@ -150,7 +150,7 @@ private:
 
             DevComplex approx = ref.series.eval(delta);
             double error = 1 - max(abs(approx.x / cur.x), abs(approx.y / cur.y));
-            if (error > MAX_ERROR) {
+            if (isnan(error) || error > MAX_ERROR) {
                 break;
             }
 

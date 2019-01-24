@@ -169,6 +169,12 @@ int main(int argc, char **argv) {
     view.setScale(1.5);
     view.maxIters = 250;
 
+    // NaN series breaking zoom
+    // view.maxIters = 1250;
+    // view.setScale(2.80969e-104);
+    // view.center.real(BigFloat("-0.4968141896256946114192256490519277983341532366871239006397328938102282969608105818918291392319167436980711814"));
+    // view.center.imag(BigFloat("-0.6359556404531552450576807825161928936851063796124890071820830821264561315128502700495367013919277125766152971"));
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
     glutInitWindowSize(800, 600);
