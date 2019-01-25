@@ -4,4 +4,4 @@
 using namespace boost::multiprecision;
 
 using BigFloat = mpfr_float;
-using BigComplex = std::complex<BigFloat>;
+using BigComplex = Complex<BigFloat>;

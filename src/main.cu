@@ -35,8 +35,8 @@ void updateTitle() {
 
 void printCoordinates() {
     std::cout << std::fixed << std::setprecision(std::max(0L, lround(-log10(view.getScale()))) + 5);
-    std::cout << "center real: " << view.center.real() << std::endl;
-    std::cout << "center imag: " << view.center.imag() << std::endl;
+    std::cout << "center real: " << view.center.x << std::endl;
+    std::cout << "center imag: " << view.center.y << std::endl;
     std::cout << std::scientific << std::setprecision(5);
     std::cout << "scale: " << view.getScale() << std::endl << std::endl;
 }
@@ -85,8 +85,8 @@ void onMouse(int button, int state, int x, int y) {
         double dx = 2.0*x/width - 1;
         double dy = 2.0*y/width - double(height)/width;
 
-        view.center.real(view.center.real() - dx*(zoom-1)*view.getScale());
-        view.center.imag(view.center.imag() + dy*(zoom-1)*view.getScale());
+        view.center.x -= dx*(zoom-1)*view.getScale();
+        view.center.y += dy*(zoom-1)*view.getScale();
         view.setScale(view.getScale() * zoom);
 
         updateTitle();
@@ -104,8 +104,8 @@ void onMotion(int x, int y) {
     lastY = y;
 
     if (isMoving) {
-        view.center.real(view.center.real() - 2*dx*view.getScale()/width);
-        view.center.imag(view.center.imag() + 2*dy*view.getScale()/width);
+        view.center.x -= 2*dx*view.getScale()/width;
+        view.center.y += 2*dy*view.getScale()/width;
         glutPostRedisplay();
     }
 }
@@ -116,7 +116,7 @@ void onKeyboard(unsigned char key, int, int) {
     } else if (key == 'i') {
         view.useSubIters = !view.useSubIters;
     } else if (key == 'r') {
-        view.center = -0.7;
+        view.center = {-0.7, 0};
         view.setScale(1.5);
         view.maxIters = 250;    
     }
@@ -186,15 +186,15 @@ void onReshape(int w, int h) {
 }
 
 int main(int argc, char **argv) {
-    view.center = -0.7;
+    view.center = {-0.7, 0};
     view.setScale(1.5);
     view.maxIters = 250;
 
     // NaN series breaking zoom
     // view.maxIters = 1250;
     // view.setScale(2.80969e-104);
-    // view.center.real(BigFloat("-0.4968141896256946114192256490519277983341532366871239006397328938102282969608105818918291392319167436980711814"));
-    // view.center.imag(BigFloat("-0.6359556404531552450576807825161928936851063796124890071820830821264561315128502700495367013919277125766152971"));
+    // view.center.x = BigFloat("-0.4968141896256946114192256490519277983341532366871239006397328938102282969608105818918291392319167436980711814");
+    // view.center.y = BigFloat("-0.6359556404531552450576807825161928936851063796124890071820830821264561315128502700495367013919277125766152971");
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);

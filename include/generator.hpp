@@ -108,35 +108,25 @@ __global__ static void renderImageKernel(RenderInfo<Fractal> info) {
     info.render();
 }
 
-DevComplex downgradeComplex(const BigComplex& x) {
-    return DevComplex(double(x.real()), double(x.imag()));
-}
-
-BigComplex upgradeComplex(const DevComplex& c) {
-    return BigComplex(BigFloat(c.x), BigFloat(c.y));
-}
-
 class Viewport {
 private:
     template<typename Fractal>
     int buildReferenceData(const Fractal& params, const BigComplex& point, std::vector<RefPointInfo>& out) {
         int iters = maxIters;
-        auto cur = point;
+        BigComplex cur = point;
         CubicSeries<DevComplex> series{1, 0, 0};
         out.resize(maxIters);
 
         for (int i = 0; i < maxIters; i++) {
             if (i > 0) {
-                series = params.seriesStep(series, downgradeComplex(cur));
+                series = params.seriesStep(series, DevComplex(cur));
                 cur = params.step(point, cur);
             }
 
-            out[i].value = downgradeComplex(cur);
-            for (int j = 0; j < 3; j++) {
-                out[i].series[j] = series[j];
-            }
+            out[i].value = DevComplex(cur);
+            out[i].series = series;
 
-            if (std::norm(cur) >= params.bailoutSqr()) {
+            if (cur.norm() >= params.bailoutSqr()) {
                 iters = min(iters, i+1);
             }
         }
@@ -211,12 +201,7 @@ public:
     void setScale(double val) {
         const unsigned digits10 = ceil(10 - log10(val));
         BigFloat::default_precision(digits10);
-        
-        // force update of center's precision
-        center = BigComplex(
-            BigFloat(center.real(), digits10),
-            BigFloat(center.imag(), digits10));
-        
+        center = { BigFloat(center.x, digits10), BigFloat(center.y, digits10) }; // Force update of center's precision
         scale = val;
     }
 
