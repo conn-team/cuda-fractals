@@ -10,6 +10,7 @@ struct JuliaBuczek {
         return 4;
     }
 
+    #pragma hd_warning_disable
     template<typename T>
     __both__ T step(T, T previous) const {
         return previous*previous + T(seed.x, seed.y);

@@ -7,6 +7,7 @@ struct Mandelbrot {
         return 4;
     }
 
+    #pragma hd_warning_disable
     template<typename T>
     __both__ T step(T first, T previous) const {
         return previous*previous + first;
