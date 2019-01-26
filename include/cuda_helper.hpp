@@ -3,6 +3,12 @@
 #include <cstdio>
 #include <vector>
 
+#if (CUDART_VERSION < 9000)
+#define __syncwarp()
+#endif
+
+constexpr int WARP_SIZE = 32;
+
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
     if (code != cudaSuccess) {
         fprintf(stderr, "gpu assert: %s %s %d\n", cudaGetErrorString(code), file, line);
