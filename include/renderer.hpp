@@ -30,7 +30,7 @@ protected:
     double scale;
 public:
     BigComplex center;
-    int width, height, maxIters;
+    int width, height, maxIters, skippedIters;
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
 };
@@ -108,17 +108,17 @@ public:
         info.refPointScreen = DevComplex(width, height) * 0.5;
 
         if (useSeriesApproximation) {
-            info.minIters = computeMinIterations({-scale, 0}, refData);
-            info.minIters = min(info.minIters, computeMinIterations({scale, 0}, refData));
-            info.minIters = min(info.minIters, computeMinIterations({0, -scale}, refData));
-            info.minIters = min(info.minIters, computeMinIterations({0, scale}, refData));
-            info.minIters = max(info.minIters-20, 0);
+            skippedIters = computeMinIterations({-scale, 0}, refData);
+            skippedIters = min(skippedIters, computeMinIterations({scale, 0}, refData));
+            skippedIters = min(skippedIters, computeMinIterations({0, -scale}, refData));
+            skippedIters = min(skippedIters, computeMinIterations({0, scale}, refData));
+            skippedIters = max(skippedIters-20, 0);
         } else {
-            info.minIters = 0;
+            skippedIters = 0;
         }
 
+        info.minIters = skippedIters;
         renderImageKernel<<<nBlocks, blockSize>>>(info);
-        std::cout << "Skipped " << info.minIters << " iterations (useSeriesApproximation=" << useSeriesApproximation << ")" << std::endl;
     }
 
 private:

@@ -19,6 +19,7 @@ int width, height;
 
 int lastX, lastY;
 bool isMoving = false;
+std::string lastTitle;
 
 Renderer<Mandelbrot> mandelbrotView;
 Renderer<Julia> juliaView;
@@ -31,9 +32,15 @@ BaseRenderer& getView() {
 
 void updateTitle() {
     std::ostringstream tmp;
-    tmp << "cuda-fractals (zoom: " << (1 / getView().getScale()) << ", maxIters: " << getView().maxIters << ")";
+    tmp << std::boolalpha;
+    tmp << "zoom: " << (1 / getView().getScale()) << ", iterations: " << getView().maxIters << ", skipped: " << getView().skippedIters;
+    tmp << ", approx: " << getView().useSeriesApproximation << ", smoothing: " << getView().useSmoothing;
     std::string title = tmp.str();
-    glutSetWindowTitle(title.c_str());
+
+    if (title != lastTitle) {
+        glutSetWindowTitle(title.c_str());
+        lastTitle = title;
+    }
 }
 
 void printCoordinates() {
@@ -88,8 +95,6 @@ void onMouse(int button, int state, int x, int y) {
         getView().center.x -= dx*(zoom-1)*getView().getScale();
         getView().center.y += dy*(zoom-1)*getView().getScale();
         getView().setScale(getView().getScale() * zoom);
-
-        updateTitle();
         glutPostRedisplay();
     } else if (button == GLUT_LEFT_BUTTON) {
         isMoving = (state == GLUT_DOWN);
@@ -118,12 +123,11 @@ void onKeyboard(unsigned char key, int, int) {
     } else if (key == 'r') {
         getView().center = {-0.7, 0};
         getView().setScale(1.5);
-        getView().maxIters = 250;    
+        getView().maxIters = 250;
     } else {
         return;
     }
-    
-    updateTitle();
+
     glutPostRedisplay();
 }
 
@@ -143,7 +147,6 @@ void onSpecialKeyboard(int key, int, int) {
     }
 
     glutPostRedisplay();
-    updateTitle();
 }
 
 void onReshape(int w, int h) {
@@ -191,6 +194,11 @@ void onReshape(int w, int h) {
     glOrtho(0, 1, 0, 1, 0, 1);
 }
 
+void onTimer(int) {
+    updateTitle();
+    glutTimerFunc(500, onTimer, 0);
+}
+
 int main(int argc, char **argv) {
     for (auto view : views) {
         view->center = {-0.7, 0};
@@ -211,7 +219,7 @@ int main(int argc, char **argv) {
     glutCreateWindow("cuda-fractals");
 
     glewInit();
-    updateTitle();
+    onTimer(0);
 
     glutDisplayFunc(onRender);
     glutMouseFunc(onMouse);
