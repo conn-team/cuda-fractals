@@ -94,7 +94,7 @@ public:
 
     void reset() {
         setScale(params.defaultScale());
-        center = params.defaultCenter();
+        center = BigComplex(params.defaultCenter());
         maxIters = params.defaultMaxIters();
     }
 

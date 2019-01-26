@@ -1,10 +1,12 @@
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cuda_gl_interop.h>
 
+#include "benchmark.hpp"
 #include "cuda_helper.hpp"
 #include "renderer.hpp"
 #include "mandelbrot.hpp"
@@ -198,6 +200,11 @@ void onTimer(int) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && strcmp(argv[1], "bench") == 0) {
+        runBenchmarks();
+        return 0;
+    }
+
     // NaN series breaking zoom
     // mandelbrotView.maxIters = 1250;
     // mandelbrotView.setScale(2.80969e-104);

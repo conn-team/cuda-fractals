@@ -4,7 +4,7 @@
 #include "series.hpp"
 
 struct Mandelbrot {
-    BigComplex      defaultCenter()   const { return {-0.7, 0}; }
+    DevComplex      defaultCenter()   const { return {-0.7, 0}; }
     double          defaultScale()    const { return 1.5; }
     int             defaultMaxIters() const { return 250; }
     __both__ double bailoutSqr()      const { return 4; }
