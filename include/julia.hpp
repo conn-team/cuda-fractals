@@ -1,10 +1,10 @@
 #pragma once
 
-#include <complex>
+#include "complex.hpp"
 #include "series.hpp"
 
-struct JuliaBuczek {
-    JuliaBuczek(DevComplex seed = {-0.8, 0.2}) : seed(seed) {}
+struct Julia {
+    Julia(DevComplex seed = {-0.8, 0.2}) : seed(seed) {}
 
     __both__ double bailoutSqr() const {
         return 4;

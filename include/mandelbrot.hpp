@@ -1,5 +1,6 @@
 #pragma once
 
+#include "complex.hpp"
 #include "series.hpp"
 
 struct Mandelbrot {
