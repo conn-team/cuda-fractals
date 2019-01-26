@@ -121,9 +121,7 @@ void onKeyboard(unsigned char key, int, int) {
     } else if (key == 'i') {
         getView().useSmoothing = !getView().useSmoothing;
     } else if (key == 'r') {
-        getView().center = {-0.7, 0};
-        getView().setScale(1.5);
-        getView().maxIters = 250;
+        getView().reset();
     } else {
         return;
     }
@@ -200,12 +198,6 @@ void onTimer(int) {
 }
 
 int main(int argc, char **argv) {
-    for (auto view : views) {
-        view->center = {-0.7, 0};
-        view->setScale(1.5);
-        view->maxIters = 250;
-    }
-
     // NaN series breaking zoom
     // mandelbrotView.maxIters = 1250;
     // mandelbrotView.setScale(2.80969e-104);

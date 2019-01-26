@@ -4,9 +4,10 @@
 #include "series.hpp"
 
 struct Mandelbrot {
-    __both__ double bailoutSqr() const {
-        return 4;
-    }
+    BigComplex      defaultCenter()   const { return {-0.7, 0}; }
+    double          defaultScale()    const { return 1.5; }
+    int             defaultMaxIters() const { return 250; }
+    __both__ double bailoutSqr()      const { return 4; }
 
     #pragma hd_warning_disable
     template<typename T>

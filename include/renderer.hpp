@@ -25,6 +25,7 @@ public:
     }
 
     virtual void render(Color *devImage) = 0;
+    virtual void reset() = 0;
 
 protected:
     double scale;
@@ -87,6 +88,16 @@ private:
     }
 
 public:
+    Renderer(Fractal p = {}) : params(p) {
+        reset();
+    }
+
+    void reset() {
+        setScale(params.defaultScale());
+        center = params.defaultCenter();
+        maxIters = params.defaultMaxIters();
+    }
+
     void render(Color *devImage) {
         constexpr uint32_t blockSize = 1024;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
