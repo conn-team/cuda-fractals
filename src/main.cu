@@ -120,7 +120,7 @@ void onRender() {
 
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    glFlush();
+    glutSwapBuffers();
 }
 
 void onMouse(int button, int state, int x, int y) {
@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
     // mandelbrotView.center.y = BigFloat("-0.6359556404531552450576807825161928936851063796124890071820830821264561315128502700495367013919277125766152971");
 
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
     glutInitWindowSize(800, 600);
     glutInitWindowPosition(200, 200);
     glutCreateWindow("cuda-fractals");
