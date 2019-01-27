@@ -11,8 +11,12 @@ private:
     }
 
     __both__ inline double dealign(int exp) const {
-        uint64_t tmp = nValue + (uint64_t(exp) << 52);
-        return reinterpret_cast<double&>(tmp);
+        union {
+            uint64_t n;
+            double f;
+        };
+        n = nValue + (uint64_t(exp) << 52);
+        return f;
     }
 
     __both__ inline void assign(double val) {
