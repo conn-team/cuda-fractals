@@ -7,11 +7,6 @@
 #include "color.hpp"
 #include "series.hpp"
 
-struct RefPointInfo {
-    DevComplex value;
-    CubicSeries<DevComplex> series;
-};
-
 template<typename Fractal>
 class RenderInfo {
 private:
@@ -62,11 +57,11 @@ public:
         }
 
         DevComplex pos = screenToDelta(x, y);
+        DevComplex cur = series.evaluate(pos);
         int iters = minIters;
-        DevComplex cur = referenceData[iters].series.evaluate(pos);
 
         while (iters+1 < approxIters) {
-            auto ref = referenceData[iters].value;
+            auto ref = referenceData[iters];
             if ((cur+ref).norm() >= params.bailoutSqr()) {
                 break;
             }
@@ -75,8 +70,8 @@ public:
             iters++;
         }
 
-        pos += referenceData[0].value;
-        cur += referenceData[iters].value;
+        pos += referenceData[0];
+        cur += referenceData[iters];
 
         while (iters < maxIters) {
             if (cur.norm() >= params.bailoutSqr()) {
@@ -93,11 +88,13 @@ public:
 public:
     Fractal params;
     Color *image;
-    RefPointInfo *referenceData;
     int minIters, maxIters, approxIters, width, height;
     DevComplex refPointScreen;
     bool useSmoothing;
     double scale;
+
+    DevComplex *referenceData;
+    CubicSeries<DevComplex> series;
 };
 
 template<typename Fractal>

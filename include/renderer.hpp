@@ -48,51 +48,45 @@ public:
 template<typename Fractal>
 class Renderer : public BaseRenderer {
 private:
-    std::vector<RefPointInfo> buildReferenceData(const BigComplex& point) {
+    std::vector<DevComplex> buildReferenceData(const BigComplex& point) {
         BigComplex cur = point;
-        CubicSeries<DevComplex> series{1, 0, 0};
-        std::vector<RefPointInfo> data;
+        std::vector<DevComplex> data = { DevComplex(cur) };
 
-        for (int i = 0; i < maxIters; i++) {
-            if (i > 0) {
-                if (useSeriesApproximation) {
-                    series = params.seriesStep(series, data[i-1].value);
-                }
-                cur = params.step(point, cur);
-            }
-
-            data.push_back({ DevComplex(cur), series });
-
-            if (cur.norm() >= params.bailoutSqr()) {
-                break;
-            }
+        for (int i = 1; i < maxIters && cur.norm() < params.bailoutSqr(); i++) {
+            cur = params.step(point, cur);
+            data.push_back(DevComplex(cur));
         }
 
         return data;
     }
 
-    int computeMinIterations(DevComplex delta, const std::vector<RefPointInfo>& refData) {
+    int computeMinIterations(DevComplex delta, const std::vector<DevComplex>& refData, CubicSeries<DevComplex>& outSeries) {
         constexpr double MAX_ERROR = 0.002;
-        size_t iters = 0;
+
+        int iters = 0;
         DevComplex cur = delta;
+        std::vector<CubicSeries<DevComplex>> series = { {1, 0, 0} };
 
         while (iters < refData.size()) {
             auto& ref = refData[iters];
-            if ((cur+ref.value).norm() >= params.bailoutSqr()) {
+            if ((cur+ref).norm() >= params.bailoutSqr()) {
                 break;
             }
 
-            DevComplex approx = ref.series.evaluate(delta);
+            DevComplex approx = series.back().evaluate(delta);
             double error = max(abs(1 - approx.x/cur.x), abs(1 - approx.y/cur.y));
 
             if (isnan(error) || error > MAX_ERROR) {
                 break;
             }
 
-            cur = params.relativeStep(delta, cur, ref.value);
+            cur = params.relativeStep(delta, cur, ref);
+            series.push_back(params.seriesStep(series.back(), ref));
             iters++;
         }
 
+        iters = max(0, iters-10);
+        outSeries = series[iters];
         return int(iters);
     }
 
@@ -120,7 +114,7 @@ public:
         info.useSmoothing = useSmoothing;
         info.scale = scale * 2 / width;
 
-        std::vector<RefPointInfo> refData = buildReferenceData(center);
+        std::vector<DevComplex> refData = buildReferenceData(center);
         devReferenceData.assign(refData);
 
         info.approxIters = int(refData.size());
@@ -128,21 +122,18 @@ public:
         info.refPointScreen = DevComplex(width, height) * 0.5;
 
         if (useSeriesApproximation) {
-            skippedIters = computeMinIterations({-scale, 0}, refData);
-            skippedIters = min(skippedIters, computeMinIterations({scale, 0}, refData));
-            skippedIters = min(skippedIters, computeMinIterations({0, -scale}, refData));
-            skippedIters = min(skippedIters, computeMinIterations({0, scale}, refData));
-            skippedIters = max(skippedIters-20, 0);
+            info.minIters = computeMinIterations({scale, scale}, refData, info.series);
         } else {
-            skippedIters = 0;
+            info.minIters = 0;
+            info.series = { 1, 0, 0 };
         }
 
-        info.minIters = skippedIters;
+        skippedIters = info.minIters;
         renderImageKernel<<<nBlocks, blockSize>>>(info);
     }
 
 private:
-    CudaArray<RefPointInfo> devReferenceData;
+    CudaArray<DevComplex> devReferenceData;
 public:
     Fractal params;
 };

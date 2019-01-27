@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "cuda_helper.hpp"
+#include "ext_float.hpp"
 
 template<typename T>
 struct Complex {
@@ -70,3 +71,4 @@ std::ostream& operator<<(std::ostream& out, const Complex<T>& r) {
 }
 
 using DevComplex = Complex<double>;
+using ExtComplex = Complex<ExtFloat>;
