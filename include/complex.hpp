@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include "cuda_helper.hpp"
+#include "bignum.hpp"
 #include "ext_float.hpp"
 
 template<typename T>
@@ -71,3 +72,4 @@ std::ostream& operator<<(std::ostream& out, const Complex<T>& r) {
 }
 
 using ExtComplex = Complex<ExtFloat>;
+using BigComplex = Complex<BigFloat>;

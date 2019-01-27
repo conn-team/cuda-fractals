@@ -29,6 +29,8 @@ BigFloat operator-(double, const BigFloat&) { return {}; }
 BigFloat operator*(double, const BigFloat&) { return {}; }
 BigFloat operator/(double, const BigFloat&) { return {}; }
 
+BigFloat frexp(const BigFloat&, int*) { return {}; }
+
 #else
 
 #include <boost/multiprecision/mpfr.hpp>
@@ -36,5 +38,3 @@ using namespace boost::multiprecision;
 using BigFloat = mpfr_float;
 
 #endif
-
-using BigComplex = Complex<BigFloat>;

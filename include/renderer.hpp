@@ -12,13 +12,13 @@
 
 class BaseRenderer {
 public:
-    double getScale() const {
+    BigFloat getScale() const {
         return scale;
     }
 
-    void setScale(double val) {
+    void setScale(const BigFloat& val) {
         // Set scale and adapt BigFloat precision
-        const long digits10 = lround(10 - log10(val));
+        const long digits10 = max(30L, lround(10 - log10(val)));
         BigFloat::default_precision(digits10);
         center = { BigFloat(center.x, digits10), BigFloat(center.y, digits10) };
         scale = val;
@@ -37,7 +37,7 @@ public:
     virtual void reset() = 0;
 
 protected:
-    double scale;
+    BigFloat scale;
 public:
     BigComplex center;
     int width, height, maxIters, skippedIters;
@@ -98,6 +98,8 @@ private:
         constexpr uint32_t blockSize = 512;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
 
+        T fScale(scale);
+
         RenderInfo<Fractal, T> info;
         info.params = params;
         info.image = devImage;
@@ -105,7 +107,7 @@ private:
         info.width = width;
         info.height = height;
         info.useSmoothing = useSmoothing;
-        info.scale = scale * 2 / width;
+        info.scale = fScale * 2 / width;
 
         std::vector<Complex<T>> refData = buildReferenceData<T>(center);
         devRefData.assign(refData);
@@ -115,7 +117,7 @@ private:
         info.refPointScreen = Complex<T>(width, height) * 0.5;
 
         if (useSeriesApproximation) {
-            info.minIters = computeMinIterations({scale, scale}, refData, info.series);
+            info.minIters = computeMinIterations({fScale, fScale}, refData, info.series);
         } else {
             info.minIters = 0;
             info.series = { ExtComplex(1), ExtComplex(0), ExtComplex(0) };
@@ -139,8 +141,10 @@ public:
     void render(Color *devImage) {
         if (scale > 1e-32) {
             performRender(devImage, refDataFloat);
-        } else {
+        } else if (scale > 1e-300) {
             performRender(devImage, refDataDouble);
+        } else {
+            performRender(devImage, refDataExtended);
         }
     }
 

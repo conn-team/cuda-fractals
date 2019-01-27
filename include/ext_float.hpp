@@ -1,5 +1,7 @@
 #pragma once
 
+#include "bignum.hpp"
+
 // Double with extended exponent
 class ExtFloat {
 private:
@@ -25,13 +27,24 @@ private:
         align();
     }
 
+    __both__ inline void assign(const BigFloat& val) {
+        fValue = double(frexp(val, &exp));
+        align();
+    }
+
 public:
     __both__ inline ExtFloat() {}
     __both__ inline ExtFloat(double val) { assign(val); }
+    __both__ inline ExtFloat(const BigFloat& val) { assign(val); }
 
     inline int exponent() const { return exp; }
 
     __both__ inline ExtFloat& operator=(double val) {
+        assign(val);
+        return *this;
+    }
+
+    __both__ inline ExtFloat& operator=(const BigFloat& val) {
         assign(val);
         return *this;
     }
