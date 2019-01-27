@@ -38,7 +38,6 @@ void initPickMode(void) {
     fractalIdx = pickViews[0];
     for (int i = 0; i < 2; ++i) {
         views[pickViews[i]]->reset();
-        views[pickViews[i]]->maxIters = 128;
     }
 }
 
