@@ -4,12 +4,12 @@
 #include "series.hpp"
 
 struct Julia {
-    Julia(DevComplex seed = {-0.8, 0.2}) : seed(seed) {}
+    Julia(Complex<float> seed = {-0.8, 0.2}) : seed(seed) {}
 
-    BigComplex      defaultCenter()   const { return {0, 0}; }
-    double          defaultScale()    const { return 2; }
-    int             defaultMaxIters() const { return 256; }
-    __both__ double bailoutSqr()      const { return 4; }
+    Complex<float> defaultCenter()   const { return {0, 0}; }
+    float          defaultScale()    const { return 2; }
+    int            defaultMaxIters() const { return 256; }
+    __both__ float bailoutSqr()      const { return 4; }
 
     template<typename T>
     __both__ Complex<T> step(Complex<T>, Complex<T> previous) const {
@@ -18,7 +18,7 @@ struct Julia {
 
     template<typename T>
     __both__ Complex<T> relativeStep(Complex<T>, Complex<T> prevDelta, Complex<T> prevReference) const {
-        return prevDelta*(prevDelta + 2.0*prevReference);
+        return prevDelta*(prevDelta + T(2.0)*prevReference);
     }
 
     template<typename T>
@@ -30,5 +30,5 @@ struct Julia {
         };
     }
 
-    DevComplex seed;
+    Complex<float> seed;
 };

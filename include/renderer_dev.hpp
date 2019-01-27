@@ -7,10 +7,10 @@
 #include "color.hpp"
 #include "series.hpp"
 
-template<typename Fractal>
+template<typename Fractal, typename T>
 class RenderInfo {
 private:
-    __device__ Color getColor(int iters, DevComplex end) {
+    __device__ Color getColor(int iters, Complex<float> end) {
         if (iters == maxIters) {
             return Color(0, 0, 0);
         }
@@ -45,8 +45,8 @@ private:
     }
 
 public:
-    __both__ DevComplex screenToDelta(int x, int y) {
-        return (DevComplex(x, y) - refPointScreen) * scale;
+    __both__ Complex<T> screenToDelta(int x, int y) {
+        return (Complex<T>(x, y) - refPointScreen) * scale;
     }
 
     __device__ void render() {
@@ -56,13 +56,13 @@ public:
             return;
         }
 
-        DevComplex pos = screenToDelta(x, y);
-        DevComplex cur(series.evaluate(ExtComplex(pos)));
+        Complex<T> pos = screenToDelta(x, y);
+        Complex<T> cur(series.evaluate(ExtComplex(pos)));
         int iters = minIters;
 
         while (iters+1 < approxIters) {
             auto ref = referenceData[iters];
-            if ((cur+ref).norm() >= params.bailoutSqr()) {
+            if (float((cur+ref).norm()) >= params.bailoutSqr()) {
                 break;
             }
 
@@ -74,7 +74,7 @@ public:
         cur += referenceData[iters];
 
         while (iters < maxIters) {
-            if (cur.norm() >= params.bailoutSqr()) {
+            if (float(cur.norm()) >= params.bailoutSqr()) {
                 break;
             }
 
@@ -82,22 +82,22 @@ public:
             iters++;
         }
 
-        image[index] = getColor(iters, cur);
+        image[index] = getColor(iters, Complex<float>(cur));
     }
 
 public:
     Fractal params;
     Color *image;
     int minIters, maxIters, approxIters, width, height;
-    DevComplex refPointScreen;
+    Complex<T> refPointScreen;
     bool useSmoothing;
-    double scale;
+    T scale;
 
-    DevComplex *referenceData;
+    Complex<T> *referenceData;
     CubicSeries<ExtComplex> series;
 };
 
-template<typename Fractal>
-__global__ void renderImageKernel(RenderInfo<Fractal> info) {
+template<typename Fractal, typename T>
+__global__ void renderImageKernel(RenderInfo<Fractal, T> info) {
     info.render();
 }

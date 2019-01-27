@@ -46,7 +46,7 @@ void initPickMode(void) {
 void updatePickMode(int y, int x) {
     const Renderer<Mandelbrot>& mandelbrot = *dynamic_cast<Renderer<Mandelbrot>*>(views[pickViews[0]]);
     Renderer<Julia>& julia = *dynamic_cast<Renderer<Julia>*>(views[pickViews[1]]);
-    const DevComplex seed = mandelbrot.mouseToCoords(y, x);
+    const auto seed = mandelbrot.mouseToCoords(y, x);
     julia.params.seed = seed;
 }
 

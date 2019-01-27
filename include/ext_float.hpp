@@ -40,6 +40,10 @@ public:
         return abs(exp) < 1022 ? dealign(exp) : 0;
     }
 
+    __both__ inline explicit operator float() const {
+        return abs(exp) < 126 ? float(dealign(exp)) : 0;
+    }
+
     __both__ inline ExtFloat& operator+=(const ExtFloat& r) {
         int diff = r.exp - exp;
         if (diff > PRECISION) {

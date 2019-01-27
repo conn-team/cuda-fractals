@@ -58,7 +58,7 @@ struct Complex {
         return *this;
     }
 
-    __both__ Complex sqr()  const { return {x*x-y*y, x*y*2.0}; }
+    __both__ Complex sqr()  const { return {x*x-y*y, x*y*T(2)}; }
     __both__ T       norm() const { return x*x + y*y; }
 };
 
@@ -70,5 +70,4 @@ std::ostream& operator<<(std::ostream& out, const Complex<T>& r) {
     return out << r.x << "+" << r.y << "i";
 }
 
-using DevComplex = Complex<double>;
 using ExtComplex = Complex<ExtFloat>;
