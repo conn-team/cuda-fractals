@@ -9,7 +9,6 @@ struct Complex {
 
     __both__ Complex(T x = 0, T y = 0) : x(x), y(y) {}
 
-    #pragma hd_warning_disable
     template<typename S>
     __both__ explicit Complex(const Complex<S>& other) : Complex(T(other.x), T(other.y)) {}
 
