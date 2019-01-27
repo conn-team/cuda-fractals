@@ -6,7 +6,7 @@
 struct Mandelbrot {
     DevComplex      defaultCenter()   const { return {-0.7, 0}; }
     double          defaultScale()    const { return 1.5; }
-    int             defaultMaxIters() const { return 250; }
+    int             defaultMaxIters() const { return 256; }
     __both__ double bailoutSqr()      const { return 4; }
 
     #pragma hd_warning_disable

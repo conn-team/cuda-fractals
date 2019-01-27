@@ -24,6 +24,13 @@ public:
         scale = val;
     }
 
+    __both__ DevComplex mouseToCoords(int y, int x) const {
+        return {
+            double(center.x) + (2.0 * x / width  - 1.0) * scale,
+            double(center.y) + (2.0 * y / height - 1.0) * scale
+        };
+    }
+
     virtual void render(Color *devImage) = 0;
     virtual void reset() = 0;
 

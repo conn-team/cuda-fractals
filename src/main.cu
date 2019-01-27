@@ -28,6 +28,25 @@ Renderer<Julia> juliaView;
 std::vector<BaseRenderer*> views = { &mandelbrotView, &juliaView };
 int fractalIdx = 0;
 
+// first is mandelbrot
+// second is julia
+int const pickViews[] = {0, 1};
+bool inPickMode = false;
+
+void initPickMode(void) {
+    inPickMode = true;
+    fractalIdx = pickViews[0];
+    for (int i = 0; i < 2; ++i) {
+        views[pickViews[i]]->reset();
+        views[pickViews[i]]->maxIters = 128;
+    }
+}
+
+void endPickMode(void) {
+    fractalIdx = pickViews[1];
+    inPickMode = false;
+}
+
 BaseRenderer& getView() {
     return *views[fractalIdx];
 }
@@ -79,13 +98,34 @@ void onRender() {
         glTexCoord2f(0, 1); glVertex2f(0, 1);
     glEnd();
 
+    if (inPickMode) {
+        BaseRenderer& view = *views[pickViews[1]];
+        gpuErrchk(cudaGraphicsMapResources(1, &cudaViewBuffer, 0));
+        gpuErrchk(cudaGraphicsResourceGetMappedPointer(&devImage, &mappedSize, cudaViewBuffer));
+
+        view.render(reinterpret_cast<Color*>(devImage));
+
+        gpuErrchk(cudaGraphicsUnmapResources(1, &cudaViewBuffer, 0));
+
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
+        glBindTexture(GL_TEXTURE_2D, viewTexture);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, view.width, view.height, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 0); glVertex2f(0.75, 0.75);
+            glTexCoord2f(1, 0); glVertex2f(1   , 0.75);
+            glTexCoord2f(1, 1); glVertex2f(1   , 1   );
+            glTexCoord2f(0, 1); glVertex2f(0.75, 1   );
+        glEnd();
+    }
+
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     glFlush();
 }
 
 void onMouse(int button, int state, int x, int y) {
-    if (button == 3 || button == 4) {
+    if ((button == 3 || button == 4) && !inPickMode) {
         if (state == GLUT_UP) {
             return;
         }
@@ -98,8 +138,11 @@ void onMouse(int button, int state, int x, int y) {
         getView().center.y += dy*(zoom-1)*getView().getScale();
         getView().setScale(getView().getScale() * zoom);
         glutPostRedisplay();
-    } else if (button == GLUT_LEFT_BUTTON) {
+    } else if (button == GLUT_LEFT_BUTTON && !inPickMode) {
         isMoving = (state == GLUT_DOWN);
+    } else if (button == GLUT_LEFT_BUTTON && inPickMode) {
+        endPickMode();
+        glutPostRedisplay();
     } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
         printCoordinates();
     }
@@ -109,6 +152,14 @@ void onMotion(int x, int y) {
     int dx = x-lastX, dy = y-lastY;
     lastX = x;
     lastY = y;
+
+    if (inPickMode) {
+        const Renderer<Mandelbrot>& mandelbrot = *dynamic_cast<Renderer<Mandelbrot>*>(views[pickViews[0]]);
+        Renderer<Julia>& julia = *dynamic_cast<Renderer<Julia>*>(views[pickViews[1]]);
+        const DevComplex seed = mandelbrot.mouseToCoords(y, x);
+        julia.params.seed = seed;
+        glutPostRedisplay();
+    }
 
     if (isMoving) {
         getView().center.x -= 2*dx*getView().getScale()/width;
@@ -124,6 +175,8 @@ void onKeyboard(unsigned char key, int, int) {
         getView().useSmoothing = !getView().useSmoothing;
     } else if (key == 'r') {
         getView().reset();
+    } else if (key == 'p' && !inPickMode) {
+        initPickMode();
     } else {
         return;
     }
@@ -132,13 +185,13 @@ void onKeyboard(unsigned char key, int, int) {
 }
 
 void onSpecialKeyboard(int key, int, int) {
-    if (key == GLUT_KEY_UP) {
+    if (key == GLUT_KEY_UP && !inPickMode) {
         getView().maxIters += 250;
-    } else if (key == GLUT_KEY_DOWN) {
+    } else if (key == GLUT_KEY_DOWN && !inPickMode) {
         getView().maxIters = std::max(getView().maxIters-250, 0);
-    } else if (key == GLUT_KEY_RIGHT) {
+    } else if (key == GLUT_KEY_RIGHT && !inPickMode) {
         fractalIdx = (fractalIdx + 1) % views.size();
-    } else if (key == GLUT_KEY_LEFT) {
+    } else if (key == GLUT_KEY_LEFT && !inPickMode) {
         if (--fractalIdx < 0) {
             fractalIdx = views.size() - 1;
         }

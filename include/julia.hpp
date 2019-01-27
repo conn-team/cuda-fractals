@@ -6,9 +6,9 @@
 struct Julia {
     Julia(DevComplex seed = {-0.8, 0.2}) : seed(seed) {}
 
-    BigComplex      defaultCenter()   const { return {-0.7, 0}; }
-    double          defaultScale()    const { return 1.5; }
-    int             defaultMaxIters() const { return 250; }
+    BigComplex      defaultCenter()   const { return {0, 0}; }
+    double          defaultScale()    const { return 2; }
+    int             defaultMaxIters() const { return 256; }
     __both__ double bailoutSqr()      const { return 4; }
 
     #pragma hd_warning_disable
