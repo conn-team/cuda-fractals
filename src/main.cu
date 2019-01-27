@@ -301,9 +301,10 @@ int main(int argc, char **argv) {
     }
 
     if (argc == 6 && strcmp(argv[1], "zoom") == 0) {
-        autoZoom.center.x = BigFloat(argv[2], strlen(argv[2]) + 10);
-        autoZoom.center.y = BigFloat(argv[3], strlen(argv[3]) + 10);
-        autoZoom.destScale = BigFloat(argv[4], strlen(argv[4]) + 10);
+        autoZoom.destScale = BigFloat(argv[4]);
+        BigFloat::default_precision(max(30L, lround(10 - log10(autoZoom.destScale))));
+        autoZoom.center.x = BigFloat(argv[2]);
+        autoZoom.center.y = BigFloat(argv[3]);
         autoZoom.maxIters = atoi(argv[5]);
         
         std::cout << "======== AutoZoom params ========" << std::endl;
