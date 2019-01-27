@@ -60,12 +60,12 @@ private:
         return data;
     }
 
-    int computeMinIterations(DevComplex delta, const std::vector<DevComplex>& refData, CubicSeries<DevComplex>& outSeries) {
+    int computeMinIterations(DevComplex delta, const std::vector<DevComplex>& refData, CubicSeries<ExtComplex>& outSeries) {
         constexpr double MAX_ERROR = 0.002;
 
         int iters = 0;
         DevComplex cur = delta;
-        std::vector<CubicSeries<DevComplex>> series = { {1, 0, 0} };
+        std::vector<CubicSeries<ExtComplex>> series = { {ExtComplex(1), ExtComplex(0), ExtComplex(0)} };
 
         while (iters < refData.size()) {
             auto& ref = refData[iters];
@@ -73,7 +73,7 @@ private:
                 break;
             }
 
-            DevComplex approx = series.back().evaluate(delta);
+            DevComplex approx(series.back().evaluate(ExtComplex(delta)));
             double error = max(abs(1 - approx.x/cur.x), abs(1 - approx.y/cur.y));
 
             if (isnan(error) || error > MAX_ERROR) {
@@ -81,7 +81,7 @@ private:
             }
 
             cur = params.relativeStep(delta, cur, ref);
-            series.push_back(params.seriesStep(series.back(), ref));
+            series.push_back(params.seriesStep(series.back(), ExtComplex(ref)));
             iters++;
         }
 
@@ -125,7 +125,7 @@ public:
             info.minIters = computeMinIterations({scale, scale}, refData, info.series);
         } else {
             info.minIters = 0;
-            info.series = { 1, 0, 0 };
+            info.series = { ExtComplex(1), ExtComplex(0), ExtComplex(0) };
         }
 
         skippedIters = info.minIters;

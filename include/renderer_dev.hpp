@@ -57,7 +57,7 @@ public:
         }
 
         DevComplex pos = screenToDelta(x, y);
-        DevComplex cur = series.evaluate(pos);
+        DevComplex cur(series.evaluate(ExtComplex(pos)));
         int iters = minIters;
 
         while (iters+1 < approxIters) {
@@ -94,7 +94,7 @@ public:
     double scale;
 
     DevComplex *referenceData;
-    CubicSeries<DevComplex> series;
+    CubicSeries<ExtComplex> series;
 };
 
 template<typename Fractal>

@@ -58,7 +58,7 @@ struct Complex {
         return *this;
     }
 
-    __both__ Complex sqr()  const { return {x*x-y*y, 2*x*y}; }
+    __both__ Complex sqr()  const { return {x*x-y*y, x*y*2.0}; }
     __both__ T       norm() const { return x*x + y*y; }
 };
 
