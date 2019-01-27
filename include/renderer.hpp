@@ -25,9 +25,11 @@ public:
     }
 
     __both__ DevComplex mouseToCoords(int y, int x) const {
+        x -= width / 2.0;
+        y -= height / 2.0;
         return {
-            double(center.x) + (2.0 * x / width  - 1.0) * scale,
-            double(center.y) + (2.0 * y / height - 1.0) * scale
+            double(center.x) + (2.0 * x / width) * scale,
+            double(center.y) + (2.0 * y / width) * scale
         };
     }
 
