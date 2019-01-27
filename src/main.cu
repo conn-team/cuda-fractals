@@ -71,7 +71,28 @@ void printCoordinates() {
     std::cout << "scale: " << getView().getScale() << std::endl << std::endl;
 }
 
-void onRender() {
+template <bool Corner>
+void _renderQuad() {
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0, 0);
+        glTexCoord2f(1, 0); glVertex2f(1, 0);
+        glTexCoord2f(1, 1); glVertex2f(1, 1);
+        glTexCoord2f(0, 1); glVertex2f(0, 1);
+    glEnd();
+}
+
+template <>
+void _renderQuad<true>() {
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(0   , 0.66);
+        glTexCoord2f(1, 0); glVertex2f(0.33, 0.66);
+        glTexCoord2f(1, 1); glVertex2f(0.33, 1.0 );
+        glTexCoord2f(0, 1); glVertex2f(0   , 1.0 );
+    glEnd();
+}
+
+template <bool Corner>
+void _renderView(BaseRenderer &view) {
     // Map PBO to CUDA
     void *devImage;
     size_t mappedSize;
@@ -79,7 +100,7 @@ void onRender() {
     gpuErrchk(cudaGraphicsResourceGetMappedPointer(&devImage, &mappedSize, cudaViewBuffer));
 
     // Render image
-    getView().render(reinterpret_cast<Color*>(devImage));
+    view.render(reinterpret_cast<Color*>(devImage));
 
     // Unmap PBO
     gpuErrchk(cudaGraphicsUnmapResources(1, &cudaViewBuffer, 0));
@@ -87,35 +108,29 @@ void onRender() {
     // Copy PBO to texture
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
     glBindTexture(GL_TEXTURE_2D, viewTexture);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, getView().width, getView().height, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, view.width, view.height, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
 
     // Render full-screen quad
-    glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(0, 0);
-        glTexCoord2f(1, 0); glVertex2f(1, 0);
-        glTexCoord2f(1, 1); glVertex2f(1, 1);
-        glTexCoord2f(0, 1); glVertex2f(0, 1);
-    glEnd();
+    _renderQuad<Corner>();
+}
 
+inline void renderViewFull(BaseRenderer &view) {
+    _renderView<false>(view);
+}
+
+inline void renderViewCorner(BaseRenderer &view) {
+    _renderView<true>(view);
+}
+
+void onRender() {
     if (inPickMode) {
-        BaseRenderer& view = *views[pickViews[1]];
-        gpuErrchk(cudaGraphicsMapResources(1, &cudaViewBuffer, 0));
-        gpuErrchk(cudaGraphicsResourceGetMappedPointer(&devImage, &mappedSize, cudaViewBuffer));
+        BaseRenderer& mandelbrot = *views[pickViews[0]];
+        BaseRenderer& julia = *views[pickViews[1]];
 
-        view.render(reinterpret_cast<Color*>(devImage));
-
-        gpuErrchk(cudaGraphicsUnmapResources(1, &cudaViewBuffer, 0));
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
-        glBindTexture(GL_TEXTURE_2D, viewTexture);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, view.width, view.height, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-
-        glBegin(GL_QUADS);
-            glTexCoord2f(0, 0); glVertex2f(0.75, 0.75);
-            glTexCoord2f(1, 0); glVertex2f(1   , 0.75);
-            glTexCoord2f(1, 1); glVertex2f(1   , 1   );
-            glTexCoord2f(0, 1); glVertex2f(0.75, 1   );
-        glEnd();
+        renderViewFull(mandelbrot);
+        renderViewCorner(julia);
+    } else {
+        renderViewFull(getView());
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
