@@ -8,6 +8,7 @@
 #include <GL/freeglut.h>
 #include <cuda_gl_interop.h>
 
+#include "autozoom.hpp"
 #include "benchmark.hpp"
 #include "cuda_helper.hpp"
 #include "renderer.hpp"
@@ -34,6 +35,9 @@ int fractalIdx = 0;
 // second is julia
 int const pickViews[] = {0, 1};
 bool inPickMode = false;
+
+bool inAutoZoom = false;
+AutoZoom autoZoom;
 
 void initPickMode(void) {
     inPickMode = true;
@@ -197,6 +201,11 @@ void onKeyboard(unsigned char key, int, int) {
         getView().reset();
     } else if (key == 'p' && !inPickMode) {
         initPickMode();
+    } else if (key == 'z' && !inAutoZoom) {
+        inAutoZoom = true;
+        autoZoom.init(&getView());
+    } else if (key == 'x' && inAutoZoom) {
+        inAutoZoom = false;
     } else {
         return;
     }
@@ -267,10 +276,22 @@ void onReshape(int w, int h) {
     glOrtho(0, 1, 0, 1, 0, 1);
 }
 
+int counter = 0;
 void onTimer(int) {
-    updateTitle();
-    glutTimerFunc(500, onTimer, 0);
+    if (++counter % 32 == 0) {
+        updateTitle();
+    }
+
+    if (inAutoZoom) {
+        autoZoom.update(&getView());
+        glutPostRedisplay();
+    }
+
+    glutTimerFunc(16, onTimer, 0);
 }
+
+// for mandelbrot
+// ./bin/main zoom -0.86351690793367237879098526735500363171122900926623390235656859029095985817479106667893417017331775248894204667404104759173049314094055150218014325200616883094376002965516933657614243657952728054695501187855097054392324039595415883494985229715906678884870521543681491308761687017203355756095815611887401303438035 0.24770085085542684897920154941114532978571652912585207591199032605489162434475579901621342900504326332001572471388836875257693078071821918832702805395251556576917743455093070180103998083138219966104076957094394557391349705788109482159372116384541942314989586824711647398290030452624776670470371203410076798241659 1.05924e-306 14000
 
 int main(int argc, char **argv) {
     if (argc == 2 && strcmp(argv[1], "bench") == 0) {
@@ -278,11 +299,19 @@ int main(int argc, char **argv) {
         return 0;
     }
 
-    // Some deep location
-    // mandelbrotView.maxIters = 14000;
-    // mandelbrotView.setScale(1.05269e-298);
-    // mandelbrotView.center.x = BigFloat("-0.863516907933672378790985267355003631711229009266233902356568590290959858174791066678934170173317752488942046674041047591730493140940551502180143252006168830943760029655169336576142436579527280546955011878550970543923240395954158834949852297159066788848705215436812860635332602278160099751996136063974639");
-    // mandelbrotView.center.y = BigFloat("0.247700850855426848979201549411145329785716529125852075911990326054891624344755799016213429005043263320015724713888368752576930780718219188327028053952515565769177434550930701801039980831382199661040769570943945573913497057881094821593721163845419423149895868247117015536061719196690131056301225176190768");
+    if (argc == 6 && strcmp(argv[1], "zoom") == 0) {
+        autoZoom.center.x = BigFloat(argv[2]);
+        autoZoom.center.y = BigFloat(argv[3]);
+        autoZoom.destScale = BigFloat(argv[4]);
+        autoZoom.maxIters = atoi(argv[5]);
+        
+        std::cout << "======== AutoZoom params ========" << std::endl;
+        std::cout << "center.x  " << autoZoom.center.x << std::endl;
+        std::cout << "center.y  " << autoZoom.center.y << std::endl;
+        std::cout << "destScale " << autoZoom.destScale << std::endl;
+        std::cout << "maxIters  " << autoZoom.maxIters << std::endl;
+        std::cout << std::endl;
+    }
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
