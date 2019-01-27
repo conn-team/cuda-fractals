@@ -9,7 +9,6 @@ struct Mandelbrot {
     int             defaultMaxIters() const { return 256; }
     __both__ double bailoutSqr()      const { return 4; }
 
-    #pragma hd_warning_disable
     template<typename T>
     __both__ Complex<T> step(Complex<T> first, Complex<T> previous) const {
         return previous.sqr() + first;

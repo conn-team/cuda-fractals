@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <iomanip>
 
 #include "cuda_helper.hpp"
 #include "benchmark.hpp"

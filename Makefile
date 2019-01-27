@@ -15,15 +15,15 @@ CXX_OBJS = $(CXX_SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 NVC_OBJS = $(NVC_SOURCES:$(SRC_DIR)/%.cu=$(BUILD_DIR)/%.cu.o)
 
 # compilers
-override CXX_FLAGS += --disable-warnings -Wall -Wextra -std=c++11
+override CXX_FLAGS += -Wall -Wextra -std=c++11
 CXX_LIBS = -I./$(INC_DIR)
 CXX=g++
 
-override NVC_FLAGS += --disable-warnings --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
+override NVC_FLAGS += --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
 NVC_LIBS = -I./$(INC_DIR)
 NVC=nvcc
 
-override LD_FLAGS += --disable-warnings --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
+override LD_FLAGS += --compiler-options -Wall,-Wextra -std=c++11 -Wno-deprecated-gpu-targets
 LD_LIBS = -I./$(INC_DIR) -lGL -lGLU -lglut -lGLEW -lmpfr
 LD=nvcc
 

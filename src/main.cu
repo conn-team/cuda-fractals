@@ -1,7 +1,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cuda_gl_interop.h>

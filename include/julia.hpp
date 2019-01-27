@@ -11,7 +11,6 @@ struct Julia {
     int             defaultMaxIters() const { return 256; }
     __both__ double bailoutSqr()      const { return 4; }
 
-    #pragma hd_warning_disable
     template<typename T>
     __both__ Complex<T> step(Complex<T>, Complex<T> previous) const {
         return previous.sqr() + Complex<T>(seed);

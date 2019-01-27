@@ -67,7 +67,7 @@ private:
         DevComplex cur = delta;
         std::vector<CubicSeries<ExtComplex>> series = { {ExtComplex(1), ExtComplex(0), ExtComplex(0)} };
 
-        while (iters < refData.size()) {
+        while (iters < int(refData.size())) {
             auto& ref = refData[iters];
             if ((cur+ref).norm() >= params.bailoutSqr()) {
                 break;
