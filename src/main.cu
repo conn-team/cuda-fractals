@@ -41,6 +41,13 @@ void initPickMode(void) {
     }
 }
 
+void updatePickMode(int y, int x) {
+    const Renderer<Mandelbrot>& mandelbrot = *dynamic_cast<Renderer<Mandelbrot>*>(views[pickViews[0]]);
+    Renderer<Julia>& julia = *dynamic_cast<Renderer<Julia>*>(views[pickViews[1]]);
+    const DevComplex seed = mandelbrot.mouseToCoords(y, x);
+    julia.params.seed = seed;
+}
+
 void endPickMode(void) {
     fractalIdx = pickViews[1];
     inPickMode = false;
@@ -168,10 +175,7 @@ void onMotion(int x, int y) {
     lastY = y;
 
     if (inPickMode) {
-        const Renderer<Mandelbrot>& mandelbrot = *dynamic_cast<Renderer<Mandelbrot>*>(views[pickViews[0]]);
-        Renderer<Julia>& julia = *dynamic_cast<Renderer<Julia>*>(views[pickViews[1]]);
-        const DevComplex seed = mandelbrot.mouseToCoords(y, x);
-        julia.params.seed = seed;
+        updatePickMode(y, x);
         glutPostRedisplay();
     }
 
