@@ -102,7 +102,7 @@ public:
     }
 
     void render(Color *devImage) {
-        constexpr uint32_t blockSize = 1024;
+        constexpr uint32_t blockSize = 512;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
 
         RenderInfo<Fractal> info;
