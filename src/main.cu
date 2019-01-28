@@ -278,7 +278,7 @@ void onReshape(int w, int h) {
 
 int counter = 0;
 void onTimer(int) {
-    if (++counter % 32 == 0) {
+    if (++counter % 12 == 0) {
         updateTitle();
     }
 
@@ -287,7 +287,7 @@ void onTimer(int) {
         glutPostRedisplay();
     }
 
-    glutTimerFunc(16, onTimer, 0);
+    glutTimerFunc(41, onTimer, 0);
 }
 
 // for mandelbrot

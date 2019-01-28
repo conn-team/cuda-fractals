@@ -28,6 +28,6 @@ struct AutoZoom {
     BigFloat destScale;
     int maxIters;
 
-    double rate = 0.98;
+    double rate = 0.96;
     BigFloat currScale;
 };
