@@ -9,6 +9,7 @@
 #include "series.hpp"
 #include "bignum.hpp"
 #include "renderer_dev.hpp"
+#include "prefix_engine.hpp"
 
 class BaseRenderer {
 public:
@@ -40,9 +41,12 @@ protected:
     BigFloat scale;
 public:
     BigComplex center;
-    int width, height, maxIters, skippedIters;
+    int width, height, maxIters;
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
+
+    int skippedIters{0}, realMaxIters{0};
+    double avgIters{0};
 };
 
 template<typename Fractal>
@@ -93,6 +97,11 @@ private:
         return int(iters);
     }
 
+    StatsEntry aggregateStats() {
+        prefixAggregate<StatsEntry, StatsAggregate>(stats);
+        return stats.get(stats.size()-1);
+    }
+
     template<typename T>
     void performRender(Color *devImage, CudaArray<Complex<T>>& devRefData) {
         constexpr uint32_t blockSize = 512;
@@ -124,7 +133,14 @@ private:
         }
 
         skippedIters = info.minIters;
+        stats.resizeDiscard(width*height);
+        info.stats = stats.data();
+
         renderImageKernel<<<nBlocks, blockSize>>>(info);
+
+        StatsEntry entry = aggregateStats();
+        realMaxIters = entry.itersMax;
+        avgIters = double(entry.itersSum) / double(width*height);
     }
 
 public:
@@ -149,6 +165,7 @@ public:
     }
 
 private:
+    CudaArray<StatsEntry> stats;
     CudaArray<Complex<float>> refDataFloat;
     CudaArray<Complex<double>> refDataDouble;
     CudaArray<Complex<ExtFloat>> refDataExtended;

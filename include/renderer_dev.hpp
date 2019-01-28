@@ -7,6 +7,20 @@
 #include "color.hpp"
 #include "series.hpp"
 
+struct StatsEntry {
+    int itersSum, itersMax, itersMaxIndex;
+};
+
+struct StatsAggregate {
+    __device__ StatsEntry operator()(const StatsEntry& l, const StatsEntry& r) const {
+        if (l.itersMax < r.itersMax) {
+            return { l.itersSum+r.itersSum, r.itersMax, r.itersMaxIndex };
+        } else {
+            return { l.itersSum+r.itersSum, l.itersMax, l.itersMaxIndex };
+        }
+    }
+};
+
 template<typename Fractal, typename T>
 class RenderInfo {
 private:
@@ -83,6 +97,7 @@ public:
         }
 
         image[index] = getColor(iters, Complex<float>(cur));
+        stats[index] = { iters, iters, index };
     }
 
 public:
@@ -95,6 +110,7 @@ public:
 
     Complex<T> *referenceData;
     CubicSeries<ExtComplex> series;
+    StatsEntry *stats;
 };
 
 template<typename Fractal, typename T>

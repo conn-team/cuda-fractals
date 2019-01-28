@@ -69,6 +69,12 @@ public:
     size_t   size()     const { return len; }
     size_t   capacity() const { return cap; }
 
+    T get(size_t i) const {
+        T ret;
+        gpuErrchk(cudaMemcpy(&ret, ptr+i, sizeof(T), cudaMemcpyDeviceToHost));
+        return ret;
+    }
+
 private:
     T *ptr{nullptr};
     size_t len{0}, cap{0};
