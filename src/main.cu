@@ -31,36 +31,37 @@ Renderer<Julia> juliaView;
 std::vector<BaseRenderer*> views = { &mandelbrotView, &juliaView };
 int fractalIdx = 0;
 
-// first is mandelbrot
-// second is julia
-int const pickViews[] = {0, 1};
 bool inPickMode = false;
-
 bool inAutoZoom = false;
 AutoZoom autoZoom;
 
-void initPickMode(void) {
-    inPickMode = true;
-    fractalIdx = pickViews[0];
-    for (int i = 0; i < 2; ++i) {
-        views[pickViews[i]]->reset();
-    }
+BaseRenderer& getView() {
+    return *views[fractalIdx];
 }
 
-void updatePickMode(int y, int x) {
-    const Renderer<Mandelbrot>& mandelbrot = *dynamic_cast<Renderer<Mandelbrot>*>(views[pickViews[0]]);
-    Renderer<Julia>& julia = *dynamic_cast<Renderer<Julia>*>(views[pickViews[1]]);
-    const auto seed = mandelbrot.mouseToCoords(y, x);
-    julia.params.seed = seed;
+Complex<float> mouseToCoords(int x, int y) {
+    x -= width / 2.f;
+    y -= height / 2.f;
+    return {
+        float(getView().center.x) + (2.f * x / width) * float(getView().getScale()),
+        float(getView().center.y) + (2.f * y / width) * float(getView().getScale())
+    };
+}
+
+void initPickMode(void) {
+    inPickMode = true;
+    mandelbrotView.reset();
+    juliaView.reset();
+    fractalIdx = 0;
+}
+
+void updatePickMode(int x, int y) {
+    juliaView.params.seed = mouseToCoords(x, y);
 }
 
 void endPickMode(void) {
-    fractalIdx = pickViews[1];
+    fractalIdx = 1;
     inPickMode = false;
-}
-
-BaseRenderer& getView() {
-    return *views[fractalIdx];
 }
 
 void updateTitle() {
@@ -89,8 +90,8 @@ void printCoordinates() {
     std::cout << "scale: " << getView().getScale() << std::endl << std::endl;
 }
 
-template <bool Corner>
-void _renderQuad() {
+template<bool Corner>
+void renderQuad() {
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex2f(0, 0);
         glTexCoord2f(1, 0); glVertex2f(1, 0);
@@ -99,8 +100,8 @@ void _renderQuad() {
     glEnd();
 }
 
-template <>
-void _renderQuad<true>() {
+template<>
+void renderQuad<true>() {
     glBegin(GL_QUADS);
         glTexCoord2f(0, 0); glVertex2f(0   , 0.66);
         glTexCoord2f(1, 0); glVertex2f(0.33, 0.66);
@@ -109,8 +110,8 @@ void _renderQuad<true>() {
     glEnd();
 }
 
-template <bool Corner>
-void _renderView(BaseRenderer &view) {
+template<bool Corner>
+void renderView(BaseRenderer &view) {
     // Map PBO to CUDA
     void *devImage;
     size_t mappedSize;
@@ -129,26 +130,15 @@ void _renderView(BaseRenderer &view) {
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, view.width, view.height, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
 
     // Render full-screen quad
-    _renderQuad<Corner>();
-}
-
-inline void renderViewFull(BaseRenderer &view) {
-    _renderView<false>(view);
-}
-
-inline void renderViewCorner(BaseRenderer &view) {
-    _renderView<true>(view);
+    renderQuad<Corner>();
 }
 
 void onRender() {
     if (inPickMode) {
-        BaseRenderer& mandelbrot = *views[pickViews[0]];
-        BaseRenderer& julia = *views[pickViews[1]];
-
-        renderViewFull(mandelbrot);
-        renderViewCorner(julia);
+        renderView<false>(mandelbrotView);
+        renderView<true>(juliaView);
     } else {
-        renderViewFull(getView());
+        renderView<false>(getView());
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -186,7 +176,7 @@ void onMotion(int x, int y) {
     lastY = y;
 
     if (inPickMode) {
-        updatePickMode(y, x);
+        updatePickMode(x, y);
         glutPostRedisplay();
     }
 
@@ -207,10 +197,15 @@ void onKeyboard(unsigned char key, int, int) {
     } else if (key == 'p' && !inPickMode) {
         initPickMode();
     } else if (key == 'z' && !inAutoZoom) {
+        inPickMode = false;
         inAutoZoom = true;
         autoZoom.init(&getView());
-    } else if (key == 'x' && inAutoZoom) {
+    } else if (key == 'x') {
         inAutoZoom = false;
+        if (inPickMode) {
+            inPickMode = false;
+            glutPostRedisplay();
+        }
     } else {
         return;
     }

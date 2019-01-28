@@ -25,15 +25,6 @@ public:
         scale = val;
     }
 
-    __both__ Complex<float> mouseToCoords(int y, int x) const {
-        x -= width / 2.f;
-        y -= height / 2.f;
-        return {
-            float(center.x) + (2.f * x / width) * float(scale),
-            float(center.y) + (2.f * y / width) * float(scale)
-        };
-    }
-
     virtual void render(Color *devImage) = 0;
     virtual void reset() = 0;
 
@@ -155,9 +146,7 @@ public:
     }
 
     void render(Color *devImage) {
-        if (scale > 1e-3) {
-            performRender(devImage, refDataFloat);
-        } else if (scale > 1e-300) {
+        if (scale > 1e-300) {
             performRender(devImage, refDataDouble);
         } else {
             performRender(devImage, refDataExtended);
@@ -166,7 +155,6 @@ public:
 
 private:
     CudaArray<StatsEntry> stats;
-    CudaArray<Complex<float>> refDataFloat;
     CudaArray<Complex<double>> refDataDouble;
     CudaArray<Complex<ExtFloat>> refDataExtended;
 public:

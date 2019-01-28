@@ -7,7 +7,6 @@ extern bool inAutoZoom;
 struct AutoZoom {
     void init(BaseRenderer *view) {
         view->reset();
-
         view->center = center;
         view->maxIters = maxIters;
     }
@@ -15,7 +14,6 @@ struct AutoZoom {
     void update(BaseRenderer *view) {
         BigFloat scale = view->getScale();
         if (destScale >= scale) {
-            // callback ?
             inAutoZoom = false;
             return;
         }
@@ -27,6 +25,5 @@ struct AutoZoom {
     BigComplex center;
     BigFloat destScale;
     int maxIters;
-
     double rate = 0.96;
 };
