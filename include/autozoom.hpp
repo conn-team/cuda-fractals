@@ -20,6 +20,7 @@ struct AutoZoom {
             return;
         }
 
+        view->center = center;
         view->setScale(view->getScale() * rate);
     }
 
