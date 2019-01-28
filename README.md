@@ -1,2 +1,5 @@
 # cuda-fractals
-GPU-accelerated fractals generation
+
+*Student project*
+
+CUDA-accelerated deep zooming into Mandelbrot and Julia using perturbation theory.
