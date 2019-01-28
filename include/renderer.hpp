@@ -139,8 +139,8 @@ private:
         renderImageKernel<<<nBlocks, blockSize>>>(info);
 
         StatsEntry entry = aggregateStats();
-        realMaxIters = entry.itersMax;
-        avgIters = double(entry.itersSum) / double(width*height);
+        realMaxIters = entry.itersMax - info.minIters;
+        avgIters = double(entry.itersSum) / double(width*height) - info.minIters;
     }
 
 public:
@@ -155,7 +155,7 @@ public:
     }
 
     void render(Color *devImage) {
-        if (scale > 1e-32) {
+        if (scale > 1e-3) {
             performRender(devImage, refDataFloat);
         } else if (scale > 1e-300) {
             performRender(devImage, refDataDouble);

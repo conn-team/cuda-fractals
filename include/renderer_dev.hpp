@@ -8,7 +8,8 @@
 #include "series.hpp"
 
 struct StatsEntry {
-    int itersSum, itersMax, itersMaxIndex;
+    int64_t itersSum;
+    int itersMax, itersMaxIndex;
 };
 
 struct StatsAggregate {
