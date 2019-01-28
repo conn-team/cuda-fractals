@@ -75,6 +75,25 @@ public:
         Complex<T> cur(series.evaluate(ExtComplex(pos)));
         int iters = minIters;
 
+        // First, try to make multiple steps to avoid checking bailout often
+        constexpr int STEP = 5;
+
+        while (iters+STEP < approxIters) {
+            Complex<T> tmp = cur;
+
+            #pragma unroll
+            for (int i = 0; i < STEP; i++) {
+                tmp = params.relativeStep(pos, tmp, referenceData[iters++]);
+            }
+
+            if (float((tmp+referenceData[iters]).norm()) >= params.bailoutSqr()) {
+                iters -= STEP;
+                break;
+            }
+            cur = tmp;
+        }
+
+        // Now step one by one
         while (iters+1 < approxIters) {
             auto ref = referenceData[iters];
             if (float((cur+ref).norm()) >= params.bailoutSqr()) {
@@ -85,6 +104,7 @@ public:
             iters++;
         }
 
+        // Reference data ended, switch to absolute calculations
         pos += referenceData[0];
         cur += referenceData[iters];
 
