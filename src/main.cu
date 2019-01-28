@@ -67,13 +67,8 @@ void endPickMode(void) {
 
 void updateTitle() {
     std::ostringstream tmp;
-    tmp << std::boolalpha;
-    tmp << "zoom: " << (1 / getView().getScale()) << ", iters: " << getView().maxIters;
-
-    if (getView().useSeriesApproximation) {
-        tmp << ", skip: " << getView().skippedIters;
-    }
-    tmp << ", avg: " << getView().avgIters << ", max: " << getView().realMaxIters;
+    tmp << "zoom: " << (1 / getView().getScale()) << ", iters: " << getView().maxIters << ", skip: " << getView().skippedIters;
+    tmp << ", min: " << getView().realMinIters << ", avg: " << getView().avgIters << ", max: " << getView().realMaxIters;
 
     std::string title = tmp.str();
 

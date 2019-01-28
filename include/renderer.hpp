@@ -36,7 +36,7 @@ public:
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
 
-    int skippedIters{0}, realMaxIters{0};
+    int skippedIters{0}, realMinIters{0}, realMaxIters{0};
     double avgIters{0};
 };
 
@@ -88,9 +88,14 @@ private:
         return int(iters);
     }
 
-    StatsEntry aggregateStats() {
+    void processStats(int skipped) {
         prefixAggregate<StatsEntry, StatsAggregate>(stats);
-        return stats.get(stats.size()-1);
+        StatsEntry entry = stats.get(stats.size()-1);
+
+        skippedIters = skipped;
+        realMinIters = entry.itersMin - skipped;
+        realMaxIters = entry.itersMax - skipped;
+        avgIters = double(entry.itersSum) / double(width*height) - skipped;
     }
 
     template<typename T>
@@ -123,15 +128,11 @@ private:
             info.series = { ExtComplex(1), ExtComplex(0), ExtComplex(0) };
         }
 
-        skippedIters = info.minIters;
         stats.resizeDiscard(width*height);
         info.stats = stats.data();
 
         renderImageKernel<<<nBlocks, blockSize>>>(info);
-
-        StatsEntry entry = aggregateStats();
-        realMaxIters = entry.itersMax - info.minIters;
-        avgIters = double(entry.itersSum) / double(width*height) - info.minIters;
+        processStats(info.minIters);
     }
 
 public:
