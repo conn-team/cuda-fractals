@@ -8,7 +8,7 @@ struct AutoZoom {
     void init(BaseRenderer *view) {
         view->reset();
         view->center = center;
-        view->maxIters = maxIters;
+        view->maxIters = 250;
     }
 
     void update(BaseRenderer *view) {
@@ -18,6 +18,8 @@ struct AutoZoom {
             return;
         }
 
+        double frac = double(log10(scale) / log10(destScale));
+        view->maxIters = max(int(maxIters*frac), 250);
         view->center = center;
         view->setScale(view->getScale() * rate);
     }
