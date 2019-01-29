@@ -34,6 +34,7 @@ int fractalIdx = 0;
 
 bool inPickMode = false;
 bool inAutoZoom = false;
+bool isFullscreen = false;
 AutoZoom autoZoom;
 
 BaseRenderer& getView() {
@@ -212,6 +213,14 @@ void onKeyboard(unsigned char key, int, int) {
             autoZoom.destScale = getView().getScale();
             getView().center.x = autoZoom.center.x = BigFloat(preset.real);
             getView().center.y = autoZoom.center.y = BigFloat(preset.imag);
+        }
+    } else if (key == 'f') {
+        isFullscreen = !isFullscreen;
+        if (isFullscreen) {
+            glutFullScreen();
+        } else {
+            glutPositionWindow(200, 200);
+            glutReshapeWindow(800, 600);
         }
     } else {
         return;
