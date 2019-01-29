@@ -101,7 +101,7 @@ private:
         }
 
         auto found = std::lower_bound(refData.seriesErrors.begin(), refData.seriesErrors.end(), maxError);
-        int iters = std::max(found - refData.seriesErrors.begin() - 10, 0L);
+        int iters = std::max(found - refData.seriesErrors.begin() - 100, 0L);
 
         // Now tighten bound
 
@@ -165,7 +165,7 @@ private:
         info.useSmoothing = useSmoothing;
         info.scale = fScale * 2 / width;
 
-        info.approxIters = int(refData.devValues.size());
+        info.approxIters = std::min(maxIters, int(refData.devValues.size()));
         info.referenceData = refData.devValues.data();
         info.refPointScreen = Complex<T>(pointToScreen(refData.point));
 
