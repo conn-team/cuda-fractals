@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 
@@ -36,41 +37,76 @@ public:
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
 
+    // Statistics
     int skippedIters{0}, realMinIters{0}, realMaxIters{0};
     double avgIters{0};
+};
+
+template<typename T>
+struct ReferenceData {
+    BigComplex point;                       // Reference point
+    std::vector<Complex<T>> values;         // Reference point iterations
+    std::vector<Series<ExtComplex>> series; // Series approximation for delta iterations
+    std::vector<ExtFloat> seriesErrors;     // Binary-searchable series error estimates
+    CudaArray<Complex<T>> devValues;        // Device array for iterations
 };
 
 template<typename Fractal>
 class Renderer : public BaseRenderer {
 private:
     template<typename T>
-    std::vector<Complex<T>> buildReferenceData(const BigComplex& point) {
+    void buildReferenceData(ReferenceData<T>& out, const BigComplex& point) {
         BigComplex cur = point;
-        std::vector<Complex<T>> data = { Complex<T>(cur) };
+        out.values = { Complex<T>(cur) };
+        out.series = { ExtComplex(1) };
+        out.seriesErrors = { 0 };
 
         for (int i = 1; i < maxIters && cur.norm() < params.bailoutSqr(); i++) {
+            out.series.push_back(params.seriesStep(out.series.back(), ExtComplex(cur)));
             cur = params.step(point, cur);
-            data.push_back(Complex<T>(cur));
+            out.values.push_back(Complex<T>(cur));
+
+            ExtFloat error = 0;
+
+            if (i >= SERIES_DEGREE) {
+                auto& curSeries = out.series.back();
+                error = curSeries[SERIES_DEGREE-1].norm() / curSeries[0].norm();
+            }
+
+            out.seriesErrors.push_back(std::max(out.seriesErrors.back(), error));
         }
 
-        return data;
+        out.devValues.assign(out.values);
     }
 
     template<typename T>
-    int computeMinIterations(ExtComplex delta, const std::vector<Complex<T>>& refData, Series<ExtComplex>& outSeries) {
+    int findMinIterations(ExtComplex delta, const ReferenceData<T>& refData) {
+        constexpr double ESTIMATE_COEFF = 1;
         constexpr double MAX_ERROR = 0.002;
 
-        int iters = 0;
-        ExtComplex cur = delta;
-        std::vector<Series<ExtComplex>> series = { ExtComplex(1) };
+        // First find loose estimation
 
-        while (iters < int(refData.size())) {
-            ExtComplex ref(refData[iters]);
+        ExtFloat invNorm = ExtFloat(1) / delta.norm();
+        ExtFloat maxError = ESTIMATE_COEFF;
+
+        for (int i = 1; i < SERIES_DEGREE; i++) {
+            maxError *= invNorm;
+        }
+
+        auto found = std::lower_bound(refData.seriesErrors.begin(), refData.seriesErrors.end(), maxError);
+        int iters = std::max(found - refData.seriesErrors.begin() - 10, 0L);
+
+        // Now tighten bound
+
+        ExtComplex cur = refData.series[iters].evaluate(delta);
+
+        while (iters < int(refData.values.size())) {
+            ExtComplex ref(refData.values[iters]);
             if (float((cur+ref).norm()) >= params.bailoutSqr()) {
                 break;
             }
 
-            ExtComplex approx = series.back().evaluate(delta);
+            ExtComplex approx = refData.series[iters].evaluate(delta);
             double errorX = abs(1 - double(approx.x/cur.x));
             double errorY = abs(1 - double(approx.y/cur.y));
 
@@ -79,13 +115,10 @@ private:
             }
 
             cur = params.relativeStep(delta, cur, ref);
-            series.push_back(params.seriesStep(series.back(), ref));
             iters++;
         }
 
-        iters = max(0, iters-10);
-        outSeries = series[iters];
-        return int(iters);
+        return max(iters-10, 0);
     }
 
     void processStats(int skipped) {
@@ -99,7 +132,7 @@ private:
     }
 
     template<typename T>
-    void performRender(Color *devImage, CudaArray<Complex<T>>& devRefData) {
+    void performRender(Color *devImage, ReferenceData<T>& refData) {
         constexpr uint32_t blockSize = 512;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
 
@@ -114,19 +147,19 @@ private:
         info.useSmoothing = useSmoothing;
         info.scale = fScale * 2 / width;
 
-        std::vector<Complex<T>> refData = buildReferenceData<T>(center);
-        devRefData.assign(refData);
+        buildReferenceData(refData, center);
 
-        info.approxIters = int(refData.size());
-        info.referenceData = devRefData.data();
+        info.approxIters = int(refData.devValues.size());
+        info.referenceData = refData.devValues.data();
         info.refPointScreen = Complex<T>(width, height) * 0.5;
 
         if (useSeriesApproximation) {
-            info.minIters = computeMinIterations({fScale, fScale}, refData, info.series);
+            info.minIters = findMinIterations({fScale, fScale}, refData);
         } else {
             info.minIters = 0;
-            info.series = { ExtComplex(1) };
         }
+
+        info.series = refData.series[info.minIters];
 
         stats.resizeDiscard(width*height);
         info.stats = stats.data();
@@ -156,8 +189,8 @@ public:
 
 private:
     CudaArray<StatsEntry> stats;
-    CudaArray<Complex<double>> refDataDouble;
-    CudaArray<Complex<ExtFloat>> refDataExtended;
+    ReferenceData<double> refDataDouble;
+    ReferenceData<ExtFloat> refDataExtended;
 public:
     Fractal params;
 };

@@ -5,7 +5,6 @@
 
 constexpr int SERIES_DEGREE = 16;
 
-// Represents polynomial a*x + b*x^2 + c*x^3
 template<typename T>
 class Series {
 public:
