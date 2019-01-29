@@ -290,8 +290,11 @@ void onTimer(int) {
     }
 
     if (inAutoZoom) {
-        autoZoom.update(&getView());
-        glutPostRedisplay();
+        if (autoZoom.update(&getView())) {
+            glutPostRedisplay();
+        } else {
+            inAutoZoom = false;
+        }
     }
 
     glutTimerFunc(41, onTimer, 0);
