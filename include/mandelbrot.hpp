@@ -20,11 +20,25 @@ struct Mandelbrot {
     }
 
     template<typename T>
-    CubicSeries<Complex<T>> seriesStep(CubicSeries<Complex<T>> prevSeries, Complex<T> prevReference) const {
-        return {
-            T(2.0)*prevReference*prevSeries[0] + T(1.0),
-            T(2.0)*prevReference*prevSeries[1] + prevSeries[0].sqr(),
-            T(2.0)*(prevReference*prevSeries[2] + prevSeries[0]*prevSeries[1])
-        };
+    Series<Complex<T>> seriesStep(Series<Complex<T>> prevSeries, Complex<T> prevReference) const {
+        Series<Complex<T>> ret;
+
+        for (int i = 0; i < SERIES_DEGREE; i++) {
+            ret[i] = prevSeries[i] * prevReference;
+
+            for (int j = 0; j < i/2; j++) {
+                ret[i] += prevSeries[j] * prevSeries[i-j-1];
+            }
+
+            ret[i] *= T(2);
+
+            if (i % 2) {
+                ret[i] += prevSeries[i/2].sqr();
+            } else if (i == 0) {
+                ret[i] += T(1);
+            }
+        }
+
+        return ret;
     }
 };

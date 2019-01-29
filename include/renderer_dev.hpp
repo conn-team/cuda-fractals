@@ -126,7 +126,7 @@ public:
     T scale;
 
     Complex<T> *referenceData;
-    CubicSeries<ExtComplex> series;
+    Series<ExtComplex> series;
     StatsEntry *stats;
 };
 

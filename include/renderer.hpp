@@ -57,12 +57,12 @@ private:
     }
 
     template<typename T>
-    int computeMinIterations(ExtComplex delta, const std::vector<Complex<T>>& refData, CubicSeries<ExtComplex>& outSeries) {
+    int computeMinIterations(ExtComplex delta, const std::vector<Complex<T>>& refData, Series<ExtComplex>& outSeries) {
         constexpr double MAX_ERROR = 0.002;
 
         int iters = 0;
         ExtComplex cur = delta;
-        std::vector<CubicSeries<ExtComplex>> series = { {ExtComplex(1), ExtComplex(0), ExtComplex(0)} };
+        std::vector<Series<ExtComplex>> series = { ExtComplex(1) };
 
         while (iters < int(refData.size())) {
             ExtComplex ref(refData[iters]);
@@ -125,7 +125,7 @@ private:
             info.minIters = computeMinIterations({fScale, fScale}, refData, info.series);
         } else {
             info.minIters = 0;
-            info.series = { ExtComplex(1), ExtComplex(0), ExtComplex(0) };
+            info.series = { ExtComplex(1) };
         }
 
         stats.resizeDiscard(width*height);

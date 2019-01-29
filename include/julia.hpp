@@ -22,7 +22,7 @@ struct Julia {
     }
 
     template<typename T>
-    CubicSeries<Complex<T>> seriesStep(CubicSeries<Complex<T>> prevSeries, Complex<T> prevReference) const {
+    Series<Complex<T>> seriesStep(Series<Complex<T>> prevSeries, Complex<T> prevReference) const {
         return {
             T(2.0)*prevReference*prevSeries[0],
             T(2.0)*prevReference*prevSeries[1] + prevSeries[0].sqr(),

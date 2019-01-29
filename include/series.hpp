@@ -3,19 +3,32 @@
 #include "cuda_helper.hpp"
 #include "complex.hpp"
 
+constexpr int SERIES_DEGREE = 16;
+
 // Represents polynomial a*x + b*x^2 + c*x^3
 template<typename T>
-class CubicSeries {
+class Series {
 public:
-    __both__ CubicSeries() {}
-    __both__ CubicSeries(T a, T b, T c) : data{a, b, c} {}
+    __both__ Series() {}
+
+    template<typename ...Args>
+    __both__ Series(const Args&... args) : data{args...} {}
 
     __both__ T& operator[](int i) { return data[i]; }
 
     __both__ T evaluate(T x) const {
-        return ((data[2]*x + data[1])*x + data[0])*x;
+        T ret(0);
+
+        #ifdef __CUDA_ARCH__
+        #pragma unroll
+        #endif
+        for (int i = SERIES_DEGREE-1; i >= 0; i--) {
+            ret = (ret + data[i]) * x;
+        }
+
+        return ret;
     }
 
 private:
-    T data[3];
+    T data[SERIES_DEGREE];
 };
