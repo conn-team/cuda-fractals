@@ -68,7 +68,7 @@ public:
         }
 
         Complex<T> pos = screenToDelta(x, y);
-        Complex<T> cur(series.evaluate(ExtComplex(pos)));
+        Complex<T> cur(series->evaluate(ExtComplex(pos)));
         int iters = minIters;
 
         // First, try to make multiple steps to avoid checking bailout often
@@ -126,7 +126,7 @@ public:
     T scale;
 
     Complex<T> *referenceData;
-    Series<ExtComplex> series;
+    Series<ExtComplex> *series;
     StatsEntry *stats;
 };
 

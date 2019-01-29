@@ -175,7 +175,8 @@ private:
             info.minIters = 0;
         }
 
-        info.series = refData.series[info.minIters];
+        devSeries.set(refData.series[info.minIters]);
+        info.series = devSeries.pointer();
 
         stats.resizeDiscard(width*height);
         info.stats = stats.data();
@@ -207,6 +208,7 @@ private:
     CudaArray<StatsEntry> stats;
     ReferenceData<double> refDataDouble;
     ReferenceData<ExtFloat> refDataExtended;
+    CudaVar<Series<ExtComplex>> devSeries;
 public:
     Fractal params;
 };
