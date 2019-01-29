@@ -27,5 +27,5 @@ struct AutoZoom {
     BigComplex center;
     BigFloat destScale;
     int maxIters;
-    double rate = 0.96;
+    double rate = 0.85;
 };
