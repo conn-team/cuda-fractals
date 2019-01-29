@@ -29,6 +29,12 @@ public:
     virtual void render(Color *devImage) = 0;
     virtual void reset() = 0;
 
+    Complex<float> pointToScreen(const BigComplex& p) {
+        Complex<float> scaled((p-center) / scale);
+        scaled *= width / 2.f;
+        return { scaled.x + width / 2.f, scaled.y + height / 2.f };
+    }
+
 protected:
     BigFloat scale;
 public:
@@ -44,7 +50,7 @@ public:
 
 template<typename T>
 struct ReferenceData {
-    BigComplex point;                       // Reference point
+    BigComplex point{1e9, 1e9};             // Reference point
     std::vector<Complex<T>> values;         // Reference point iterations
     std::vector<Series<ExtComplex>> series; // Series approximation for delta iterations
     std::vector<ExtFloat> seriesErrors;     // Binary-searchable series error estimates
@@ -77,6 +83,7 @@ private:
         }
 
         out.devValues.assign(out.values);
+        out.point = point;
     }
 
     template<typename T>
@@ -121,6 +128,16 @@ private:
         return max(iters-10, 0);
     }
 
+    template<typename T>
+    void updateReference(ReferenceData<T>& refData) {
+        Complex<float> diff((refData.point - center) / scale);
+        float dist = sqrt(diff.norm());
+
+        if (dist > 0.5) {
+            buildReferenceData(refData, center);
+        }
+    }
+
     void processStats(int skipped) {
         prefixAggregate<StatsEntry, StatsAggregate>(stats);
         StatsEntry entry = stats.get(stats.size()-1);
@@ -135,8 +152,9 @@ private:
     void performRender(Color *devImage, ReferenceData<T>& refData) {
         constexpr uint32_t blockSize = 512;
         uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
-
         T fScale(scale);
+
+        updateReference(refData);
 
         RenderInfo<Fractal, T> info;
         info.params = params;
@@ -147,11 +165,9 @@ private:
         info.useSmoothing = useSmoothing;
         info.scale = fScale * 2 / width;
 
-        buildReferenceData(refData, center);
-
         info.approxIters = int(refData.devValues.size());
         info.referenceData = refData.devValues.data();
-        info.refPointScreen = Complex<T>(width, height) * 0.5;
+        info.refPointScreen = Complex<T>(pointToScreen(refData.point));
 
         if (useSeriesApproximation) {
             info.minIters = findMinIterations({fScale, fScale}, refData);
