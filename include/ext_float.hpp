@@ -123,6 +123,27 @@ public:
         return tmp;
     }
 
+    __both__ inline bool operator<(const ExtFloat& r) const {
+        if (fValue > 0) {
+            return r.fValue > 0 && (exp < r.exp || (exp == r.exp && fValue < r.fValue));
+        } else if (fValue < 0) {
+            return r.fValue >= 0 || exp > r.exp || (exp == r.exp && fValue < r.fValue);
+        }
+        return r.fValue > 0;
+    }
+
+    __both__ inline bool operator==(const ExtFloat& r) const {
+        return exp == r.exp && fValue == r.fValue;
+    }
+
+    __both__ inline bool operator!=(const ExtFloat& r) const {
+        return exp != r.exp || fValue != r.fValue;
+    }
+
+    __both__ inline bool operator>(const ExtFloat& r)  const { return r < *this; }
+    __both__ inline bool operator<=(const ExtFloat& r) const { return *this < r || *this == r; }
+    __both__ inline bool operator>=(const ExtFloat& r) const { return r <= *this; }
+
 private:
     union {
         double fValue;
