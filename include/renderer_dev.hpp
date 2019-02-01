@@ -20,41 +20,6 @@ struct StatsAggregate {
 
 template<typename Fractal, typename T>
 class RenderInfo {
-private:
-    __device__ Color getColor(int iters, Complex<float> end) {
-        if (iters == maxIters) {
-            return Color(0, 0, 0);
-        }
-
-        Color colors[] = {
-            {0, 0, 0},
-            {200, 0, 0},
-            {200, 200, 0},
-            {0, 200, 200},
-            {0, 0, 200},
-        };
-
-        float subIters = iters % 160;
-        if (useSmoothing) {
-            subIters += 2 - log10f(end.norm()) / log10f(4.0f);
-            if ((subIters = max(0.0f, subIters)) > 160.f) {
-                subIters -= 160.f;
-            }
-        }
-        subIters /= 32.f;
-
-        int c0 = floor(subIters - 5.0f * floor(subIters / 5.0f));
-        int c1 = ceil (subIters - 5.0f * floor(subIters / 5.0f));
-        float t = subIters - c0;
-        c1 %= 5;
-
-        return {
-            static_cast<uint8_t>((1.0f - t) * colors[c0].r + t * colors[c1].r),
-            static_cast<uint8_t>((1.0f - t) * colors[c0].g + t * colors[c1].g),
-            static_cast<uint8_t>((1.0f - t) * colors[c0].b + t * colors[c1].b)
-        };
-    }
-
 public:
     __both__ Complex<T> screenToDelta(int x, int y) {
         return (Complex<T>(x, y) - refPointScreen) * scale;
@@ -113,7 +78,7 @@ public:
             iters++;
         }
 
-        image[index] = getColor(iters, Complex<float>(cur));
+        image[index] = Color::fromIterations(iters, Complex<float>(cur), maxIters, useSmoothing);
         stats[index] = { iters, iters, iters };
     }
 

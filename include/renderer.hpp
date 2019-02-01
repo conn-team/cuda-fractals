@@ -61,129 +61,135 @@ template<typename Fractal>
 class Renderer : public BaseRenderer {
 private:
     template<typename T>
-    void buildReferenceData(ReferenceData<T>& out, const BigComplex& point) {
-        BigComplex cur = point;
-        out.values = { Complex<T>(cur) };
-        out.series = { ExtComplex(1) };
-        out.seriesErrors = { 0 };
+    struct RendererImpl {
+        RendererImpl(Renderer<Fractal>& parent) : view(parent) {}
 
-        for (int i = 1; i < maxIters && cur.norm() < params.bailoutSqr(); i++) {
-            out.series.push_back(params.seriesStep(out.series.back(), ExtComplex(cur)));
-            cur = params.step(point, cur);
-            out.values.push_back(Complex<T>(cur));
+        void buildReferenceData(ReferenceData<T>& out, const BigComplex& point) {
+            BigComplex cur = point;
+            out.values = { Complex<T>(cur) };
+            out.series = { ExtComplex(1) };
+            out.seriesErrors = { 0 };
 
-            ExtFloat error = 0;
+            for (int i = 1; i < view.maxIters && cur.norm() < view.params.bailoutSqr(); i++) {
+                out.series.push_back(view.params.seriesStep(out.series.back(), ExtComplex(cur)));
+                cur = view.params.step(point, cur);
+                out.values.push_back(Complex<T>(cur));
 
-            if (i >= SERIES_DEGREE) {
-                auto& curSeries = out.series.back();
-                error = curSeries[SERIES_DEGREE-1].norm() / curSeries[0].norm();
+                ExtFloat error = 0;
+
+                if (i >= SERIES_DEGREE) {
+                    auto& curSeries = out.series.back();
+                    error = curSeries[SERIES_DEGREE-1].norm() / curSeries[0].norm();
+                }
+
+                out.seriesErrors.push_back(std::max(out.seriesErrors.back(), error));
             }
 
-            out.seriesErrors.push_back(std::max(out.seriesErrors.back(), error));
+            out.devValues.assign(out.values);
+            out.point = point;
         }
 
-        out.devValues.assign(out.values);
-        out.point = point;
-    }
+        int findMinIterations(ExtComplex delta) {
+            constexpr double ESTIMATE_COEFF = 1;
+            constexpr double MAX_ERROR = 0.002;
 
-    template<typename T>
-    int findMinIterations(ExtComplex delta, const ReferenceData<T>& refData) {
-        constexpr double ESTIMATE_COEFF = 1;
-        constexpr double MAX_ERROR = 0.002;
+            // First find loose estimation
 
-        // First find loose estimation
+            ExtFloat invNorm = ExtFloat(1) / delta.norm();
+            ExtFloat maxError = ESTIMATE_COEFF;
 
-        ExtFloat invNorm = ExtFloat(1) / delta.norm();
-        ExtFloat maxError = ESTIMATE_COEFF;
-
-        for (int i = 1; i < SERIES_DEGREE; i++) {
-            maxError *= invNorm;
-        }
-
-        auto found = std::lower_bound(refData.seriesErrors.begin(), refData.seriesErrors.end(), maxError);
-        int iters = std::max(found - refData.seriesErrors.begin() - 100, 0L);
-
-        // Now tighten bound
-
-        ExtComplex cur = refData.series[iters].evaluate(delta);
-
-        while (iters < int(refData.values.size())) {
-            ExtComplex ref(refData.values[iters]);
-            if (float((cur+ref).norm()) >= params.bailoutSqr()) {
-                break;
+            for (int i = 1; i < SERIES_DEGREE; i++) {
+                maxError *= invNorm;
             }
 
-            ExtComplex approx = refData.series[iters].evaluate(delta);
-            double errorX = abs(1 - double(approx.x/cur.x));
-            double errorY = abs(1 - double(approx.y/cur.y));
+            auto found = std::lower_bound(refData.seriesErrors.begin(), refData.seriesErrors.end(), maxError);
+            int iters = std::max(found - refData.seriesErrors.begin() - 100, 0L);
 
-            if (std::isnan(errorX) || std::isnan(errorY) || max(errorX, errorY) > MAX_ERROR) {
-                break;
+            // Now tighten bound
+
+            ExtComplex cur = refData.series[iters].evaluate(delta);
+
+            while (iters < int(refData.values.size())) {
+                ExtComplex ref(refData.values[iters]);
+                if (float((cur+ref).norm()) >= view.params.bailoutSqr()) {
+                    break;
+                }
+
+                ExtComplex approx = refData.series[iters].evaluate(delta);
+                double errorX = abs(1 - double(approx.x/cur.x));
+                double errorY = abs(1 - double(approx.y/cur.y));
+
+                if (std::isnan(errorX) || std::isnan(errorY) || max(errorX, errorY) > MAX_ERROR) {
+                    break;
+                }
+
+                cur = view.params.relativeStep(delta, cur, ref);
+                iters++;
             }
 
-            cur = params.relativeStep(delta, cur, ref);
-            iters++;
+            return max(iters-10, 0);
         }
 
-        return max(iters-10, 0);
-    }
+        void updateReference() {
+            Complex<float> diff((refData.point - view.center) / view.scale);
+            float dist = sqrt(diff.norm());
 
-    template<typename T>
-    void updateReference(ReferenceData<T>& refData) {
-        Complex<float> diff((refData.point - center) / scale);
-        float dist = sqrt(diff.norm());
-
-        if (dist > 0.5) {
-            buildReferenceData(refData, center);
-        }
-    }
-
-    void processStats(int skipped) {
-        prefixAggregate<StatsEntry, StatsAggregate>(stats);
-        StatsEntry entry = stats.get(stats.size()-1);
-
-        skippedIters = skipped;
-        realMinIters = entry.itersMin - skipped;
-        realMaxIters = entry.itersMax - skipped;
-        avgIters = double(entry.itersSum) / double(width*height) - skipped;
-    }
-
-    template<typename T>
-    void performRender(Color *devImage, ReferenceData<T>& refData) {
-        constexpr uint32_t blockSize = 512;
-        uint32_t nBlocks = (width*height+blockSize-1) / blockSize;
-        T fScale(scale);
-
-        updateReference(refData);
-
-        RenderInfo<Fractal, T> info;
-        info.params = params;
-        info.image = devImage;
-        info.maxIters = maxIters;
-        info.width = width;
-        info.height = height;
-        info.useSmoothing = useSmoothing;
-        info.scale = fScale * 2 / width;
-
-        info.approxIters = std::min(maxIters, int(refData.devValues.size()));
-        info.referenceData = refData.devValues.data();
-        info.refPointScreen = Complex<T>(pointToScreen(refData.point));
-
-        if (useSeriesApproximation) {
-            info.minIters = findMinIterations({fScale, fScale}, refData);
-        } else {
-            info.minIters = 0;
+            if (dist > 0.5) {
+                buildReferenceData(refData, view.center);
+            }
         }
 
-        devSeries.set(refData.series[info.minIters]);
-        info.series = devSeries.pointer();
+        void processStats(int skipped) {
+            prefixAggregate<StatsEntry, StatsAggregate>(stats);
+            StatsEntry entry = stats.get(stats.size()-1);
 
-        stats.resizeDiscard(width*height);
-        info.stats = stats.data();
+            view.skippedIters = skipped;
+            view.realMinIters = entry.itersMin - skipped;
+            view.realMaxIters = entry.itersMax - skipped;
+            view.avgIters = double(entry.itersSum) / double(view.width*view.height) - skipped;
+        }
 
-        renderImageKernel<<<nBlocks, blockSize>>>(info);
-        processStats(info.minIters);
-    }
+        void render(Color *devImage) {
+            constexpr uint32_t blockSize = 512;
+            uint32_t nBlocks = (view.width*view.height+blockSize-1) / blockSize;
+            T fScale(view.scale);
+
+            updateReference();
+
+            RenderInfo<Fractal, T> info;
+            info.params = view.params;
+            info.image = devImage;
+            info.maxIters = view.maxIters;
+            info.width = view.width;
+            info.height = view.height;
+            info.useSmoothing = view.useSmoothing;
+            info.scale = fScale * 2 / view.width;
+
+            info.approxIters = std::min(view.maxIters, int(refData.devValues.size()));
+            info.referenceData = refData.devValues.data();
+            info.refPointScreen = Complex<T>(view.pointToScreen(refData.point));
+
+            if (view.useSeriesApproximation) {
+                info.minIters = findMinIterations({fScale, fScale});
+            } else {
+                info.minIters = 0;
+            }
+
+            devSeries.set(refData.series[info.minIters]);
+            info.series = devSeries.pointer();
+
+            stats.resizeDiscard(view.width*view.height);
+            info.stats = stats.data();
+
+            renderImageKernel<<<nBlocks, blockSize>>>(info);
+            processStats(info.minIters);
+        }
+
+        Renderer& view;
+        CudaArray<StatsEntry> stats;
+        ReferenceData<T> refData;
+        CudaVar<Series<ExtComplex>> devSeries;
+    };
 
 public:
     Renderer(Fractal p = {}) : params(p) {
@@ -197,18 +203,19 @@ public:
     }
 
     void render(Color *devImage) {
-        if (scale > 1e-300) {
-            performRender(devImage, refDataDouble);
+        if (scale > 1e-30) {
+            implFloat.render(devImage);
+        } else if (scale > 1e-300) {
+            implDouble.render(devImage);
         } else {
-            performRender(devImage, refDataExtended);
+            implExtended.render(devImage);
         }
     }
 
 private:
-    CudaArray<StatsEntry> stats;
-    ReferenceData<double> refDataDouble;
-    ReferenceData<ExtFloat> refDataExtended;
-    CudaVar<Series<ExtComplex>> devSeries;
+    RendererImpl<float> implFloat{*this};
+    RendererImpl<double> implDouble{*this};
+    RendererImpl<ExtFloat> implExtended{*this};
 public:
     Fractal params;
 };
