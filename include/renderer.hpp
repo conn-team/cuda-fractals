@@ -28,6 +28,8 @@ public:
 
     virtual void render(Color *devImage) = 0;
     virtual void reset() = 0;
+    virtual void resetScale() = 0;
+    virtual void preprocess() = 0;
 
     Complex<float> pointToScreen(const BigComplex& p) {
         Complex<float> scaled((p-center) / scale);
@@ -196,8 +198,12 @@ public:
         reset();
     }
 
-    void reset() {
+    void resetScale() {
         setScale(params.defaultScale());
+    }
+
+    void reset() {
+        resetScale();
         center = BigComplex(params.defaultCenter());
         maxIters = params.defaultMaxIters();
     }
@@ -210,6 +216,12 @@ public:
         } else {
             implExtended.render(devImage);
         }
+    }
+
+    void preprocess() {
+        implFloat.updateReference();
+        implDouble.updateReference();
+        implExtended.updateReference();
     }
 
 private:

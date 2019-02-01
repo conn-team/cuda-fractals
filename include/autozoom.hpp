@@ -4,9 +4,11 @@
 
 struct AutoZoom {
     void init(BaseRenderer *view) {
-        view->reset();
+        view->setScale(destScale);
         view->center = center;
         view->maxIters = maxIters;
+        view->preprocess();
+        view->resetScale();
     }
 
     bool update(BaseRenderer *view) {
