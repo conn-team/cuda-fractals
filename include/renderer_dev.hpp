@@ -39,7 +39,7 @@ public:
         // First, try to make multiple steps to avoid checking bailout often
         constexpr int STEP = 5;
 
-        while (iters+STEP < approxIters) {
+        while (iters+STEP < deltaIters) {
             Complex<T> tmp = cur;
 
             #pragma unroll
@@ -55,7 +55,7 @@ public:
         }
 
         // Now step one by one
-        while (iters+1 < approxIters) {
+        while (iters+1 < deltaIters) {
             auto ref = referenceData[iters];
             if (float((cur+ref).norm()) >= params.bailoutSqr()) {
                 break;
@@ -85,7 +85,7 @@ public:
 public:
     Fractal params;
     Color *image;
-    int minIters, maxIters, approxIters, width, height;
+    int minIters, maxIters, deltaIters, width, height;
     Complex<T> refPointScreen;
     bool useSmoothing;
     T scale;

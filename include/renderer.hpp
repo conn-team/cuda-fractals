@@ -167,7 +167,7 @@ private:
             info.useSmoothing = view.useSmoothing;
             info.scale = fScale * 2 / view.width;
 
-            info.approxIters = std::min(view.maxIters, int(refData.devValues.size()));
+            info.deltaIters = std::min(view.maxIters, int(refData.devValues.size()));
             info.referenceData = refData.devValues.data();
             info.refPointScreen = Complex<T>(view.pointToScreen(refData.point));
 
@@ -209,9 +209,7 @@ public:
     }
 
     void render(Color *devImage) {
-        if (scale > 1e-30) {
-            implFloat.render(devImage);
-        } else if (scale > 1e-300) {
+        if (scale > 1e-300) {
             implDouble.render(devImage);
         } else {
             implExtended.render(devImage);
@@ -219,13 +217,11 @@ public:
     }
 
     void preprocess() {
-        implFloat.updateReference();
         implDouble.updateReference();
         implExtended.updateReference();
     }
 
 private:
-    RendererImpl<float> implFloat{*this};
     RendererImpl<double> implDouble{*this};
     RendererImpl<ExtFloat> implExtended{*this};
 public:
