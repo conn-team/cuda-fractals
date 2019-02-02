@@ -67,13 +67,11 @@ private:
     struct RendererImpl {
         RendererImpl(Renderer<Fractal>& parent) : view(parent) {}
 
-        void buildReferenceData() {
-            // Compute iterations of reference point using high precision arithmetic
-
+        void computeReferenceValues() {
             BigComplex cur = view.center;
             refData.point = view.center;
-            refData.scale = view.scale;
-            refData.values = { Complex<T>(cur) };
+            refData.values.clear();
+            refData.values.push_back(Complex<T>(cur));
 
             for (int i = 1; i < view.maxIters && cur.norm() < view.params.bailoutSqr(); i++) {
                 cur = view.params.step(view.center, cur);
@@ -81,29 +79,30 @@ private:
             }
 
             refData.devValues.assign(refData.values);
+        }
 
+        void computeSeries() {
             // Compute points around reference
-
             int iters = refData.values.size();
-            ExtFloat fScale(view.scale);
+            refData.scale = view.scale;
 
             SeriesInfo<Fractal, T> info;
             info.params = view.params;
             info.numSteps = (iters+SERIES_STEP-1) / SERIES_STEP;
             info.degree = SERIES_DEGREE;
-            info.scale = T(fScale);
+            info.scale = T(view.scale);
             info.referenceData = refData.devValues.data();
 
-            CudaArray<Complex<T>> devPointBuffer(info.numSteps * info.degree);
-            info.outPoints = devPointBuffer.data();
+            CudaArray<Complex<T>> devPoints(info.numSteps * info.degree);
+            info.outPoints = devPoints.data();
 
-            computeSeriesKernel<<<1, info.degree>>>(info);
+            computeSeriesPointsKernel<<<1, info.degree>>>(info);
 
-            std::vector<Complex<T>> pointBuffer;
-            devPointBuffer.get(pointBuffer);
+            std::vector<Complex<T>> points;
+            devPoints.get(points);
 
             // Interpolate points using FFT
-
+            ExtFloat invScale(1.0 / view.scale);
             FFT<ExtFloat> fft;
             refData.series.resize(info.numSteps);
 
@@ -112,7 +111,7 @@ private:
                 series.resize(info.degree);
 
                 for (int j = 0; j < info.degree; j++) {
-                    series[j] = ExtComplex(pointBuffer[i*info.degree + j]);
+                    series[j] = ExtComplex(points[i*info.degree + j]);
                 }
 
                 ExtFloat mult(1.0);
@@ -120,13 +119,13 @@ private:
 
                 for (auto& x : series) {
                     x *= mult;
-                    mult /= fScale;
+                    mult *= invScale;
                 }
             }
         }
 
         int findMaxSkip(ExtComplex delta) {
-            constexpr int MAX_ERROR_EXP = -10;
+            constexpr double MAX_ERROR = 1e-9;
 
             ExtComplex deltaPow(1.0);
             for (int i = 1; i < SERIES_DEGREE; i++) {
@@ -137,9 +136,9 @@ private:
                 auto& series = refData.series[i];
                 ExtComplex approx = evaluatePolynomial(series.data(), series.size(), delta);
                 ExtComplex last = series.back() * deltaPow;
-                ExtComplex err = last.norm() / approx.norm();
+                ExtFloat err = last.norm() / approx.norm();
 
-                if (err.norm().exponent() > MAX_ERROR_EXP) {
+                if (double(err) > MAX_ERROR*MAX_ERROR) {
                     return i-1;
                 }
             }
@@ -151,9 +150,10 @@ private:
             Complex<float> diff((refData.point - view.center) / view.scale);
             float dist = sqrt(diff.norm());
 
-            if (dist > 0.5 || refData.scale > 5*view.scale) {
-                buildReferenceData();
+            if (dist > 0.5) {
+                computeReferenceValues();
             }
+            computeSeries();
         }
 
         void processStats(int skipped) {

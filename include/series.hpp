@@ -4,11 +4,11 @@
 #include "complex.hpp"
 
 constexpr int SERIES_DEGREE = 16;
-constexpr int SERIES_STEP = 10;
+constexpr int SERIES_STEP = 100;
 
 template<typename Fractal, typename T>
 struct SeriesInfo {
-    __device__ void compute() {
+    __device__ void computePoints() {
         int index = blockIdx.x*blockDim.x + threadIdx.x;
         if (index >= degree) {
             return;
@@ -37,8 +37,8 @@ struct SeriesInfo {
 };
 
 template<typename Fractal, typename T>
-__global__ void computeSeriesKernel(SeriesInfo<Fractal, T> info) {
-    info.compute();
+__global__ void computeSeriesPointsKernel(SeriesInfo<Fractal, T> info) {
+    info.computePoints();
 }
 
 template<typename T>
