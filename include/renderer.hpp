@@ -119,8 +119,16 @@ private:
                 ExtFloat mult(1.0);
                 fft.inverse(series);
 
-                for (auto& x : series) {
-                    x *= mult;
+                int noiseBound = -1e9;
+                for (auto& elem : series) {
+                    noiseBound = std::max(noiseBound, std::max(elem.x.exponent(), elem.y.exponent()));
+                }
+
+                noiseBound -= 10;
+
+                for (auto& elem : series) {
+                    elem.x = (elem.x.exponent() >= noiseBound ? elem.x*mult : ExtFloat::zero());
+                    elem.y = (elem.y.exponent() >= noiseBound ? elem.y*mult : ExtFloat::zero());
                     mult *= invScale;
                 }
             }
@@ -156,8 +164,8 @@ private:
 
             if (dist > 0.5) {
                 computeReferenceValues();
+                computeSeries();
             }
-            computeSeries();
         }
 
         void processStats(int skipped) {

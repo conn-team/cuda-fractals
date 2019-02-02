@@ -37,6 +37,13 @@ public:
     __both__ inline ExtFloat(double val) { assign(val); }
     __both__ inline ExtFloat(const BigFloat& val) { assign(val); }
 
+    __both__ static ExtFloat zero() {
+        ExtFloat ret;
+        ret.fValue = 1.f;
+        ret.exp = -100000;
+        return ret;
+    }
+
     inline int exponent() const { return exp; }
 
     __both__ inline ExtFloat& operator=(double val) {
