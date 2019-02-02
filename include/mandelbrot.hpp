@@ -10,17 +10,17 @@ struct Mandelbrot {
     __both__ float bailoutSqr()      const { return 4; }
 
     template<typename T>
-    __both__ Complex<T> step(Complex<T> first, Complex<T> previous) const {
+    __both__ Complex<T> step(const Complex<T>& first, const Complex<T>& previous) const {
         return previous.sqr() + first;
     }
 
     template<typename T>
-    __both__ Complex<T> relativeStep(Complex<T> firstDelta, Complex<T> prevDelta, Complex<T> prevReference) const {
+    __both__ Complex<T> relativeStep(const Complex<T>& firstDelta, const Complex<T>& prevDelta, const Complex<T>& prevReference) const {
         return prevDelta*(prevDelta + T(2.0)*prevReference) + firstDelta;
     }
 
     template<typename T>
-    Series<Complex<T>> seriesStep(Series<Complex<T>> prevSeries, Complex<T> prevReference) const {
+    Series<Complex<T>> seriesStep(const Series<Complex<T>>& prevSeries, const Complex<T>& prevReference) const {
         Series<Complex<T>> ret;
 
         for (int i = 0; i < SERIES_DEGREE; i++) {

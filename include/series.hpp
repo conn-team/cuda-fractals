@@ -13,6 +13,7 @@ public:
     template<typename ...Args>
     __both__ Series(const Args&... args) : data{args...} {}
 
+    __both__ const T& operator[](int i) const { return data[i]; }
     __both__ T& operator[](int i) { return data[i]; }
 
     __both__ T evaluate(T x) const {

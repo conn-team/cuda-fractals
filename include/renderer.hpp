@@ -72,7 +72,7 @@ private:
             out.series = { ExtComplex(1) };
             out.seriesErrors = { 0 };
 
-            for (int i = 1; i < view.maxIters && cur.norm() < view.params.bailoutSqr(); i++) {
+            for (int i = 1; i < view.maxIters && out.values.back().norm() < view.params.bailoutSqr(); i++) {
                 out.series.push_back(view.params.seriesStep(out.series.back(), ExtComplex(cur)));
                 cur = view.params.step(point, cur);
                 out.values.push_back(Complex<T>(cur));
