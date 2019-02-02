@@ -82,6 +82,8 @@ private:
         }
 
         void computeSeries() {
+            constexpr double RADIUS = 0.5;
+
             // Compute points around reference
             int iters = refData.values.size();
             refData.scale = view.scale;
@@ -90,7 +92,7 @@ private:
             info.params = view.params;
             info.numSteps = (iters+SERIES_STEP-1) / SERIES_STEP;
             info.degree = SERIES_DEGREE;
-            info.scale = T(view.scale);
+            info.scale = T(view.scale) * RADIUS;
             info.referenceData = refData.devValues.data();
 
             CudaArray<Complex<T>> devPoints(info.numSteps * info.degree);
@@ -102,7 +104,7 @@ private:
             devPoints.get(points);
 
             // Interpolate points using FFT
-            ExtFloat invScale(1.0 / view.scale);
+            ExtFloat invScale(1.0 / RADIUS / view.scale);
             FFT<ExtFloat> fft;
             refData.series.resize(info.numSteps);
 
@@ -125,20 +127,22 @@ private:
         }
 
         int findMaxSkip(ExtComplex delta) {
-            constexpr double MAX_ERROR = 1e-9;
+            constexpr double MAX_ERROR = 0.002;
 
-            ExtComplex deltaPow(1.0);
-            for (int i = 1; i < SERIES_DEGREE; i++) {
-                deltaPow *= delta;
-            }
+            ExtComplex cur = delta;
+            int iters = 0;
 
             for (size_t i = 1; i < refData.series.size(); i++) {
+                for (int j = 0; j < SERIES_STEP; j++) {
+                    cur = view.params.relativeStep(delta, cur, ExtComplex(refData.values[iters++]));
+                }
+
                 auto& series = refData.series[i];
                 ExtComplex approx = evaluatePolynomial(series.data(), series.size(), delta);
-                ExtComplex last = series.back() * deltaPow;
-                ExtFloat err = last.norm() / approx.norm();
+                double errorX = abs(1 - double(approx.x/cur.x));
+                double errorY = abs(1 - double(approx.y/cur.y));
 
-                if (double(err) > MAX_ERROR*MAX_ERROR) {
+                if (std::max(errorX, errorY) > MAX_ERROR) {
                     return i-1;
                 }
             }
