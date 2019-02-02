@@ -17,14 +17,9 @@ public:
 
     __both__ T evaluate(T x) const {
         T ret(0);
-
-        #ifdef __CUDA_ARCH__
-        #pragma unroll
-        #endif
         for (int i = SERIES_DEGREE-1; i >= 0; i--) {
             ret = (ret + data[i]) * x;
         }
-
         return ret;
     }
 
