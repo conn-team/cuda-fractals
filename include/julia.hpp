@@ -21,14 +21,5 @@ struct Julia {
         return prevDelta*(prevDelta + T(2.0)*prevReference);
     }
 
-    template<typename T>
-    Series<Complex<T>> seriesStep(Series<Complex<T>> prevSeries, Complex<T> prevReference) const {
-        return {
-            T(2.0)*prevReference*prevSeries[0],
-            T(2.0)*prevReference*prevSeries[1] + prevSeries[0].sqr(),
-            T(2.0)*prevReference*prevSeries[2] + T(2.0)*prevSeries[0]*prevSeries[1]
-        };
-    }
-
     Complex<float> seed;
 };

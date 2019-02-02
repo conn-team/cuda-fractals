@@ -19,8 +19,7 @@ struct StatsAggregate {
 };
 
 template<typename Fractal, typename T>
-class RenderInfo {
-public:
+struct RenderInfo {
     __both__ Complex<T> screenToDelta(int x, int y) {
         return (Complex<T>(x, y) - refPointScreen) * scale;
     }
@@ -33,7 +32,7 @@ public:
         }
 
         Complex<T> pos = screenToDelta(x, y);
-        Complex<T> cur(series->evaluate(ExtComplex(pos)));
+        Complex<T> cur(evaluatePolynomial(series, seriesDegree, ExtComplex(pos)));
         int iters = minIters;
 
         // First, try to make multiple steps to avoid checking bailout often
@@ -82,16 +81,15 @@ public:
         stats[index] = { iters, iters, iters };
     }
 
-public:
     Fractal params;
     Color *image;
-    int minIters, maxIters, approxIters, width, height;
+    int minIters, maxIters, approxIters, seriesDegree, width, height;
     Complex<T> refPointScreen;
     bool useSmoothing;
     T scale;
 
     Complex<T> *referenceData;
-    Series<ExtComplex> *series;
+    ExtComplex *series;
     StatsEntry *stats;
 };
 

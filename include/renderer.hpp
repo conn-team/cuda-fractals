@@ -11,6 +11,7 @@
 #include "bignum.hpp"
 #include "renderer_dev.hpp"
 #include "prefix_engine.hpp"
+#include "fft.hpp"
 
 class BaseRenderer {
 public:
@@ -52,11 +53,11 @@ public:
 
 template<typename T>
 struct ReferenceData {
-    BigComplex point{1e9, 1e9};             // Reference point
-    std::vector<Complex<T>> values;         // Reference point iterations
-    std::vector<Series<ExtComplex>> series; // Series approximation for delta iterations
-    std::vector<ExtFloat> seriesErrors;     // Binary-searchable series error estimates
-    CudaArray<Complex<T>> devValues;        // Device array for iterations
+    BigComplex point{1e9, 1e9};                  // Reference point
+    BigFloat scale{100};                         // Reference scale
+    std::vector<Complex<T>> values;              // Reference point iterations
+    std::vector<std::vector<ExtComplex>> series; // Series approximation for delta iterations (one per SERIES_STEP iterations)
+    CudaArray<Complex<T>> devValues;             // Device array for reference point iterations
 };
 
 template<typename Fractal>
@@ -66,78 +67,92 @@ private:
     struct RendererImpl {
         RendererImpl(Renderer<Fractal>& parent) : view(parent) {}
 
-        void buildReferenceData(ReferenceData<T>& out, const BigComplex& point) {
-            BigComplex cur = point;
-            out.values = { Complex<T>(cur) };
-            out.series = { ExtComplex(1) };
-            out.seriesErrors = { 0 };
+        void buildReferenceData() {
+            // Compute iterations of reference point using high precision arithmetic
+
+            BigComplex cur = view.center;
+            refData.point = view.center;
+            refData.scale = view.scale;
+            refData.values = { Complex<T>(cur) };
 
             for (int i = 1; i < view.maxIters && cur.norm() < view.params.bailoutSqr(); i++) {
-                out.series.push_back(view.params.seriesStep(out.series.back(), ExtComplex(cur)));
-                cur = view.params.step(point, cur);
-                out.values.push_back(Complex<T>(cur));
-
-                ExtFloat error = 0;
-
-                if (i >= SERIES_DEGREE) {
-                    auto& curSeries = out.series.back();
-                    error = curSeries[SERIES_DEGREE-1].norm() / curSeries[0].norm();
-                }
-
-                out.seriesErrors.push_back(std::max(out.seriesErrors.back(), error));
+                cur = view.params.step(view.center, cur);
+                refData.values.push_back(Complex<T>(cur));
             }
 
-            out.devValues.assign(out.values);
-            out.point = point;
+            refData.devValues.assign(refData.values);
+
+            // Compute points around reference
+
+            int iters = refData.values.size();
+            ExtFloat fScale(view.scale);
+
+            SeriesInfo<Fractal, T> info;
+            info.params = view.params;
+            info.numSteps = (iters+SERIES_STEP-1) / SERIES_STEP;
+            info.degree = SERIES_DEGREE;
+            info.scale = T(fScale);
+            info.referenceData = refData.devValues.data();
+
+            CudaArray<Complex<T>> devPointBuffer(info.numSteps * info.degree);
+            info.outPoints = devPointBuffer.data();
+
+            computeSeriesKernel<<<1, info.degree>>>(info);
+
+            std::vector<Complex<T>> pointBuffer;
+            devPointBuffer.get(pointBuffer);
+
+            // Interpolate points using FFT
+
+            FFT<ExtFloat> fft;
+            refData.series.resize(info.numSteps);
+
+            for (int i = 0; i < info.numSteps; i++) {
+                auto& series = refData.series[i];
+                series.resize(info.degree);
+
+                for (int j = 0; j < info.degree; j++) {
+                    series[j] = ExtComplex(pointBuffer[i*info.degree + j]);
+                }
+
+                ExtFloat mult(1.0);
+                fft.inverse(series);
+
+                for (auto& x : series) {
+                    x *= mult;
+                    mult /= fScale;
+                }
+            }
         }
 
-        int findMinIterations(ExtComplex delta) {
-            constexpr double ESTIMATE_COEFF = 1;
-            constexpr double MAX_ERROR = 0.002;
+        int findMaxSkip(ExtComplex delta) {
+            constexpr int MAX_ERROR_EXP = -10;
 
-            // First find loose estimation
-
-            ExtFloat invNorm = ExtFloat(1) / delta.norm();
-            ExtFloat maxError = ESTIMATE_COEFF;
-
+            ExtComplex deltaPow(1.0);
             for (int i = 1; i < SERIES_DEGREE; i++) {
-                maxError *= invNorm;
+                deltaPow *= delta;
             }
 
-            auto found = std::lower_bound(refData.seriesErrors.begin(), refData.seriesErrors.end(), maxError);
-            int iters = std::max(found - refData.seriesErrors.begin() - 100, 0L);
+            for (size_t i = 1; i < refData.series.size(); i++) {
+                auto& series = refData.series[i];
+                ExtComplex approx = evaluatePolynomial(series.data(), series.size(), delta);
+                ExtComplex last = series.back() * deltaPow;
+                ExtComplex err = last.norm() / approx.norm();
 
-            // Now tighten bound
-
-            ExtComplex cur = refData.series[iters].evaluate(delta);
-
-            while (iters < int(refData.values.size())) {
-                ExtComplex ref(refData.values[iters]);
-                if (float((cur+ref).norm()) >= view.params.bailoutSqr()) {
-                    break;
+                if (err.norm().exponent() > MAX_ERROR_EXP) {
+                    return i-1;
                 }
-
-                ExtComplex approx = refData.series[iters].evaluate(delta);
-                double errorX = abs(1 - double(approx.x/cur.x));
-                double errorY = abs(1 - double(approx.y/cur.y));
-
-                if (std::isnan(errorX) || std::isnan(errorY) || max(errorX, errorY) > MAX_ERROR) {
-                    break;
-                }
-
-                cur = view.params.relativeStep(delta, cur, ref);
-                iters++;
             }
 
-            return max(iters-10, 0);
+            return refData.series.size()-1;
         }
 
         void updateReference() {
             Complex<float> diff((refData.point - view.center) / view.scale);
             float dist = sqrt(diff.norm());
 
-            if (dist > 0.5) {
-                buildReferenceData(refData, view.center);
+            if (dist > 0.5 || refData.scale > 5*view.scale) {
+                buildReferenceData();
             }
         }
 
@@ -172,25 +187,28 @@ private:
             info.refPointScreen = Complex<T>(view.pointToScreen(refData.point));
 
             if (view.useSeriesApproximation) {
-                info.minIters = findMinIterations({fScale, fScale});
+                int skip = findMaxSkip({fScale, fScale});
+                devSeries.assign(refData.series[skip]);
+                info.minIters = skip * SERIES_STEP;
+                info.seriesDegree = SERIES_DEGREE;
             } else {
+                devSeries.assign(refData.series[0]);
                 info.minIters = 0;
+                info.seriesDegree = 2;
             }
-
-            devSeries.set(refData.series[info.minIters]);
-            info.series = devSeries.pointer();
 
             stats.resizeDiscard(view.width*view.height);
             info.stats = stats.data();
+            info.series = devSeries.data();
 
             renderImageKernel<<<nBlocks, blockSize>>>(info);
             processStats(info.minIters);
         }
 
         Renderer& view;
-        CudaArray<StatsEntry> stats;
         ReferenceData<T> refData;
-        CudaVar<Series<ExtComplex>> devSeries;
+        CudaArray<StatsEntry> stats;
+        CudaArray<ExtComplex> devSeries;
     };
 
 public:

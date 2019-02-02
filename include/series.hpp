@@ -4,30 +4,48 @@
 #include "complex.hpp"
 
 constexpr int SERIES_DEGREE = 16;
+constexpr int SERIES_STEP = 10;
 
-template<typename T>
-class Series {
-public:
-    __both__ Series() {}
-
-    template<typename ...Args>
-    __both__ Series(const Args&... args) : data{args...} {}
-
-    __both__ T& operator[](int i) { return data[i]; }
-
-    __both__ T evaluate(T x) const {
-        T ret(0);
-
-        #ifdef __CUDA_ARCH__
-        #pragma unroll
-        #endif
-        for (int i = SERIES_DEGREE-1; i >= 0; i--) {
-            ret = (ret + data[i]) * x;
+template<typename Fractal, typename T>
+struct SeriesInfo {
+    __device__ void compute() {
+        int index = blockIdx.x*blockDim.x + threadIdx.x;
+        if (index >= degree) {
+            return;
         }
 
-        return ret;
+        double angle = 2*M_PI*index / degree;
+        Complex<T> pos(cos(angle), sin(angle));
+        pos *= scale;
+
+        Complex<T> cur = pos;
+        int iters = 0;
+        outPoints[index] = cur;
+
+        for (int i = 1; i < numSteps; i++) {
+            for (int j = 0; j < SERIES_STEP; j++) {
+                cur = params.relativeStep(pos, cur, referenceData[iters++]);
+            }
+            outPoints[i*degree + index] = cur;
+        }
     }
 
-private:
-    T data[SERIES_DEGREE];
+    Fractal params;
+    int numSteps, degree;
+    T scale;
+    Complex<T> *referenceData, *outPoints;
 };
+
+template<typename Fractal, typename T>
+__global__ void computeSeriesKernel(SeriesInfo<Fractal, T> info) {
+    info.compute();
+}
+
+template<typename T>
+__both__ T evaluatePolynomial(T *poly, int size, const T& point) {
+    T ret(0);
+    for (int i = size-1; i >= 0; i--) {
+        ret = ret*point + poly[i];
+    }
+    return ret;
+}
