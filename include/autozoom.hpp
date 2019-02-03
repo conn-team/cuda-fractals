@@ -10,6 +10,7 @@ struct AutoZoom {
         view->preprocess();
         view->resetScale();
         view->maxIters = 500;
+        view->setScale(view->getScale() * 100);
     }
 
     bool update(BaseRenderer *view) {

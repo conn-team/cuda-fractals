@@ -10,7 +10,7 @@
 #include "position_library.hpp"
 
 constexpr int PRESET = 6;
-constexpr double ZOOM_RATE = 0.9;
+constexpr double ZOOM_RATE = 0.94;
 constexpr int FRAMERATE = 30;
 constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
