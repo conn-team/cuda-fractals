@@ -58,7 +58,7 @@ public:
     BigComplex center;
     int width, height, maxIters;
     bool useSeriesApproximation{true};
-    bool useSmoothing{false};
+    bool useSmoothing{true};
     bool useBetterReference{false};
 
     // Statistics
@@ -154,6 +154,10 @@ private:
         int findMinIterations(ExtComplex delta) {
             constexpr double ESTIMATE_COEFF = 1;
             constexpr double MAX_ERROR = 0.001;
+
+            if (view.scale > 0.01) {
+                return 0;
+            }
 
             // First find loose estimation
 
