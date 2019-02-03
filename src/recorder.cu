@@ -15,14 +15,14 @@ constexpr int FRAMERATE = 30;
 constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 constexpr int SUPERSAMPLING = 4;
-const char *OUTPUT_FILE = "output.mp4";
+const char *OUTPUT_FILE = "output.mkv";
 
-FILE *ffmpegRecord(int fps, int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
+FILE *ffmpegRecord(const char *file, int fps, int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
     std::ostringstream cmd;
-    cmd << "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt bgra";
+    cmd << "ffmpeg -y -f rawvideo -pix_fmt bgra";
     cmd << " -s " << srcWidth << "x" << srcHeight << " -r " << fps << " -i -";
     cmd << " -vf scale=\"" << dstWidth << ":" << dstHeight << "\"";
-    cmd << " -f mp4 -q:v 2 -an -vcodec mpeg4 " << OUTPUT_FILE;
+    cmd << " -c libx264 -preset slow -crf 18 -pix_fmt yuv420p -an " << file;
 
     std::string tmp = cmd.str();
     FILE *pipe = popen(tmp.c_str(), "w");
@@ -55,7 +55,7 @@ void runRecorder() {
     view.width = WIDTH*SUPERSAMPLING;
     view.height = HEIGHT*SUPERSAMPLING;
 
-    FILE *output = ffmpegRecord(FRAMERATE, view.width, view.height, WIDTH, HEIGHT);
+    FILE *output = ffmpegRecord(OUTPUT_FILE, FRAMERATE, view.width, view.height, WIDTH, HEIGHT);
 
     CudaArray<Color> devImage(view.width*view.height);
     std::vector<Color> image;
