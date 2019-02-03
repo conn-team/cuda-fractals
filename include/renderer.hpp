@@ -200,16 +200,6 @@ private:
             updateReference(lock);
         }
 
-        void processStats(int skipped) {
-            prefixAggregate<StatsEntry, StatsAggregate>(stats);
-            StatsEntry entry = stats.get(stats.size()-1);
-
-            view.skippedIters = skipped;
-            view.realMinIters = entry.itersMin - skipped;
-            view.realMaxIters = entry.itersMax - skipped;
-            view.avgIters = double(entry.itersSum) / double(view.width*view.height) - skipped;
-        }
-
         void render(Color *devImage) {
             constexpr uint32_t blockSize = 512;
             uint32_t nBlocks = (view.width*view.height+blockSize-1) / blockSize;
@@ -241,15 +231,14 @@ private:
             devSeries.set(refData.series[info.minIters]);
             info.series = devSeries.pointer();
 
-            stats.resizeDiscard(view.width*view.height);
-            info.stats = stats.data();
+            view.stats.resizeDiscard(view.width*view.height);
+            info.stats = view.stats.data();
 
             renderImageKernel<<<nBlocks, blockSize>>>(info);
-            processStats(info.minIters);
+            view.processStats(info.minIters);
         }
 
         Renderer& view;
-        CudaArray<StatsEntry> stats;
         CudaVar<Series<ExtComplex>> devSeries;
 
         std::thread workerThread;
@@ -259,6 +248,16 @@ private:
         bool refDataReady{false}, refDataRequest{false}, workerShouldExit{false};
         BigComplex newRefPoint;
     };
+
+    void processStats(int skipped) {
+        prefixAggregate<StatsEntry, StatsAggregate>(stats);
+        StatsEntry entry = stats.get(stats.size()-1);
+
+        skippedIters = skipped;
+        realMinIters = entry.itersMin - skipped;
+        realMaxIters = entry.itersMax - skipped;
+        avgIters = double(entry.itersSum) / double(width*height) - skipped;
+    }
 
 public:
     Renderer(Fractal p = {}) : params(p) {
@@ -289,6 +288,7 @@ public:
     }
 
 private:
+    CudaArray<StatsEntry> stats;
     RendererImpl<double> implDouble{*this};
     RendererImpl<ExtFloat> implExtended{*this};
 public:
