@@ -75,6 +75,12 @@ public:
         return ret;
     }
 
+    void swap(CudaArray& other) {
+        std::swap(ptr, other.ptr);
+        std::swap(len, other.len);
+        std::swap(cap, other.cap);
+    }
+
 private:
     T *ptr{nullptr};
     size_t len{0}, cap{0};
@@ -109,6 +115,10 @@ public:
     }
 
     T *pointer() { return ptr; }
+
+    void swap(CudaVar& other) {
+        std::swap(ptr, other.ptr);
+    }
 
 private:
     T *ptr;

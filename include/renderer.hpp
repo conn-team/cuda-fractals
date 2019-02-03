@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "cuda_helper.hpp"
 #include "complex.hpp"
@@ -57,6 +60,14 @@ struct ReferenceData {
     std::vector<Series<ExtComplex>> series; // Series approximation for delta iterations
     std::vector<ExtFloat> seriesErrors;     // Binary-searchable series error estimates
     CudaArray<Complex<T>> devValues;        // Device array for iterations
+
+    void swap(ReferenceData& other) {
+        std::swap(point, other.point);
+        values.swap(other.values);
+        series.swap(other.series);
+        seriesErrors.swap(other.seriesErrors);
+        devValues.swap(other.devValues);
+    }
 };
 
 template<typename Fractal>
@@ -64,17 +75,27 @@ class Renderer : public BaseRenderer {
 private:
     template<typename T>
     struct RendererImpl {
-        RendererImpl(Renderer<Fractal>& parent) : view(parent) {}
+        RendererImpl(Renderer<Fractal>& parent) : view(parent), workerThread(&RendererImpl::referenceWorker, this) {}
 
-        void buildReferenceData(ReferenceData<T>& out, const BigComplex& point) {
-            BigComplex cur = point;
+        ~RendererImpl() {
+            {
+                std::unique_lock<std::mutex> lock(refMutex);
+                workerShouldExit = true;
+                refCond.notify_all();
+            }
+            workerThread.join();
+        }
+
+        void buildReferenceData(ReferenceData<T>& out) {
+            BigComplex cur = out.point;
             out.values = { Complex<T>(cur) };
             out.series = { ExtComplex(1) };
             out.seriesErrors = { 0 };
 
+            // Race condition on maxIters and params, theoretically
             for (int i = 1; i < view.maxIters && out.values.back().norm() < view.params.bailoutSqr(); i++) {
                 out.series.push_back(view.params.seriesStep(out.series.back(), ExtComplex(cur)));
-                cur = view.params.step(point, cur);
+                cur = view.params.step(out.point, cur);
                 out.values.push_back(Complex<T>(cur));
 
                 ExtFloat error = 0;
@@ -88,7 +109,33 @@ private:
             }
 
             out.devValues.assign(out.values);
-            out.point = point;
+        }
+
+        void referenceWorker() {
+            ReferenceData<T> newRefData;
+
+            while (true) {
+                {
+                    std::unique_lock<std::mutex> lock(refMutex);
+                    refCond.wait(lock, [this] { return refDataRequest || workerShouldExit; });
+
+                    if (workerShouldExit) {
+                        return;
+                    }
+
+                    refDataRequest = false;
+                    newRefData.point = newRefPoint;
+                }
+
+                buildReferenceData(newRefData);
+
+                {
+                    std::unique_lock<std::mutex> lock(refMutex);
+                    refData.swap(newRefData);
+                    refDataReady = true;
+                    refCond.notify_all();
+                }
+            }
         }
 
         int findMinIterations(ExtComplex delta) {
@@ -132,13 +179,25 @@ private:
             return max(iters-10, 0);
         }
 
-        void updateReference() {
+        void updateReference(std::unique_lock<std::mutex>& lock) {
             Complex<float> diff((refData.point - view.center) / view.scale);
             float dist = sqrt(diff.norm());
 
-            if (dist > 0.5) {
-                buildReferenceData(refData, view.center);
+            if (dist > 0.05) {
+                newRefPoint = view.center;
+                refDataRequest = true;
+                if (dist > 1000) {
+                    refDataReady = false;
+                }
+                refCond.notify_one();
             }
+
+            refCond.wait(lock, [this] { return refDataReady; });
+        }
+
+        void updateReference() {
+            std::unique_lock<std::mutex> lock(refMutex);
+            updateReference(lock);
         }
 
         void processStats(int skipped) {
@@ -156,7 +215,8 @@ private:
             uint32_t nBlocks = (view.width*view.height+blockSize-1) / blockSize;
             T fScale(view.scale);
 
-            updateReference();
+            std::unique_lock<std::mutex> lock(refMutex);
+            updateReference(lock);
 
             RenderInfo<Fractal, T> info;
             info.params = view.params;
@@ -189,8 +249,14 @@ private:
 
         Renderer& view;
         CudaArray<StatsEntry> stats;
-        ReferenceData<T> refData;
         CudaVar<Series<ExtComplex>> devSeries;
+
+        std::thread workerThread;
+        std::mutex refMutex;
+        std::condition_variable refCond;
+        ReferenceData<T> refData;
+        bool refDataReady{false}, refDataRequest{false}, workerShouldExit{false};
+        BigComplex newRefPoint;
     };
 
 public:
