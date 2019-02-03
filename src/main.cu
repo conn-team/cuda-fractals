@@ -267,6 +267,8 @@ void onKeyboard(unsigned char key, int, int) {
     } else if (key == 'h') {
         supersamplingRatio = (supersamplingRatio == 1 ? 4 : 1);
         initView();
+    } else if (key == 'b') {
+        getView().useBetterReference = !getView().useBetterReference;
     } else {
         return;
     }

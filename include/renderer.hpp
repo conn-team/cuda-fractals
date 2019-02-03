@@ -40,6 +40,18 @@ public:
         return { scaled.x + width / 2.f, scaled.y + height / 2.f };
     }
 
+    BigComplex screenToPoint(Complex<float> p) {
+        p.x -= width / 2.f;
+        p.y -= height / 2.f;
+        p *= 2.f / width;
+        return center + BigComplex(p)*scale;
+    }
+
+    float scaledDist(const BigComplex& a, const BigComplex& b) {
+        Complex<float> diff((a-b) / scale);
+        return sqrt(diff.norm());
+    }
+
 protected:
     BigFloat scale;
 public:
@@ -47,6 +59,7 @@ public:
     int width, height, maxIters;
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
+    bool useBetterReference{true};
 
     // Statistics
     int skippedIters{0}, realMinIters{0}, realMaxIters{0};
@@ -140,7 +153,7 @@ private:
 
         int findMinIterations(ExtComplex delta) {
             constexpr double ESTIMATE_COEFF = 1;
-            constexpr double MAX_ERROR = 0.002;
+            constexpr double MAX_ERROR = 0.001;
 
             // First find loose estimation
 
@@ -180,11 +193,16 @@ private:
         }
 
         void updateReference(std::unique_lock<std::mutex>& lock) {
-            Complex<float> diff((refData.point - view.center) / view.scale);
-            float dist = sqrt(diff.norm());
+            BigComplex wantedPoint = view.center;
+
+            if (view.useBetterReference && view.scaledDist(wantedPoint, view.maxItersPoint) < 1.5) {
+                wantedPoint = view.maxItersPoint;
+            }
+
+            float dist = view.scaledDist(refData.point, wantedPoint);
 
             if (dist > 0.05) {
-                newRefPoint = view.center;
+                newRefPoint = wantedPoint;
                 refDataRequest = true;
                 if (dist > 1000) {
                     refDataReady = false;
@@ -257,6 +275,7 @@ private:
         realMinIters = entry.itersMin;
         realMaxIters = entry.itersMax;
         avgIters = double(entry.itersSum) / double(width*height);
+        maxItersPoint = screenToPoint({ float(entry.indexMax % width), float(entry.indexMax / width) });
     }
 
 public:
@@ -291,6 +310,7 @@ private:
     CudaArray<StatsEntry> stats;
     RendererImpl<double> implDouble{*this};
     RendererImpl<ExtFloat> implExtended{*this};
+    BigComplex maxItersPoint{1e9, 1e9};
 public:
     Fractal params;
 };
