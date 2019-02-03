@@ -213,7 +213,6 @@ private:
         void render(Color *devImage) {
             constexpr uint32_t blockSize = 512;
             uint32_t nBlocks = (view.width*view.height+blockSize-1) / blockSize;
-            T fScale(view.scale);
 
             std::unique_lock<std::mutex> lock(refMutex);
             updateReference(lock);
@@ -225,14 +224,16 @@ private:
             info.width = view.width;
             info.height = view.height;
             info.useSmoothing = view.useSmoothing;
-            info.scale = fScale * 2 / view.width;
+            info.scale = T(view.scale) * 2 / view.width;
 
             info.deltaIters = std::min(view.maxIters, int(refData.devValues.size()));
             info.referenceData = refData.devValues.data();
             info.refPointScreen = Complex<T>(view.pointToScreen(refData.point));
 
             if (view.useSeriesApproximation) {
-                info.minIters = findMinIterations({fScale, fScale});
+                BigComplex delta(view.center - refData.point), add(view.scale, view.scale);
+                info.minIters = findMinIterations(ExtComplex(delta+add));
+                info.minIters = std::min(info.minIters, findMinIterations(ExtComplex(delta-add)));
             } else {
                 info.minIters = 0;
             }
