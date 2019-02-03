@@ -16,12 +16,12 @@
 #include "julia.hpp"
 #include "position_library.hpp"
 
-constexpr double SUPERSAMPLING_RATIO = 1;
 constexpr double ZOOM_SPEED = 1.2;
 
 struct cudaGraphicsResource *cudaViewBuffer;
 GLuint viewBuffer, viewTexture;
 int width, height;
+int supersamplingRatio = 1;
 
 int lastX, lastY;
 bool isMoving = false;
@@ -130,6 +130,48 @@ void renderView(BaseRenderer &view) {
     renderQuad<Corner>();
 }
 
+void initView() {
+    for (auto view : views) {
+        view->width = width*supersamplingRatio;
+        view->height = height*supersamplingRatio;
+    }
+
+    // Free old buffers
+    if (viewBuffer) {
+        cudaGraphicsUnregisterResource(cudaViewBuffer);
+        glDeleteBuffers(1, &viewBuffer);
+        viewBuffer = 0;
+    }
+    if (viewTexture) {
+        glDeleteTextures(1, &viewTexture);
+        viewTexture = 0;
+    }
+
+    // Allocate texture
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &viewTexture);
+    glBindTexture(GL_TEXTURE_2D, viewTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getView().width, getView().height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Allocate and register PBO
+    glGenBuffers(1, &viewBuffer);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, getView().width*getView().height*4, nullptr, GL_DYNAMIC_COPY);
+    gpuErrchk(cudaGraphicsGLRegisterBuffer(&cudaViewBuffer, viewBuffer, cudaGraphicsMapFlagsWriteDiscard));
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    // Setup scene
+    glViewport(0, 0, width, height);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glOrtho(0, 1, 0, 1, 0, 1);
+}
+
 void onRender() {
     if (inPickMode) {
         renderView<false>(mandelbrotView);
@@ -222,6 +264,9 @@ void onKeyboard(unsigned char key, int, int) {
             glutPositionWindow(200, 200);
             glutReshapeWindow(800, 600);
         }
+    } else if (key == 'h') {
+        supersamplingRatio = (supersamplingRatio == 1 ? 4 : 1);
+        initView();
     } else {
         return;
     }
@@ -250,46 +295,7 @@ void onSpecialKeyboard(int key, int, int) {
 void onReshape(int w, int h) {
     width = w;
     height = h;
-
-    for (auto view : views) {
-        view->width = int(lround(w*SUPERSAMPLING_RATIO));
-        view->height = int(lround(h*SUPERSAMPLING_RATIO));
-    }
-
-    // Free old buffers
-    if (viewBuffer) {
-        cudaGraphicsUnregisterResource(cudaViewBuffer);
-        glDeleteBuffers(1, &viewBuffer);
-        viewBuffer = 0;
-    }
-    if (viewTexture) {
-        glDeleteTextures(1, &viewTexture);
-        viewTexture = 0;
-    }
-
-    // Allocate texture
-    glEnable(GL_TEXTURE_2D);
-    glGenTextures(1, &viewTexture);
-    glBindTexture(GL_TEXTURE_2D, viewTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getView().width, getView().height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Allocate and register PBO
-    glGenBuffers(1, &viewBuffer);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, viewBuffer);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, getView().width*getView().height*4, nullptr, GL_DYNAMIC_COPY);
-    gpuErrchk(cudaGraphicsGLRegisterBuffer(&cudaViewBuffer, viewBuffer, cudaGraphicsMapFlagsWriteDiscard));
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    // Setup scene
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glOrtho(0, 1, 0, 1, 0, 1);
+    initView();
 }
 
 int counter = 0;
