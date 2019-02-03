@@ -9,12 +9,18 @@
 
 struct StatsEntry {
     int64_t itersSum;
-    int itersMin, itersMax;
+    int itersMin, itersMax, indexMax;
 };
 
 struct StatsAggregate {
-    __device__ StatsEntry operator()(const StatsEntry& l, const StatsEntry& r) const {
-        return { l.itersSum+r.itersSum, min(l.itersMin, r.itersMin), max(l.itersMax, r.itersMax) };
+    __device__ StatsEntry operator()(StatsEntry l, const StatsEntry& r) const {
+        l.itersSum += r.itersSum;
+        l.itersMin = min(l.itersMin, r.itersMin);
+        if (l.itersMax < r.itersMax) {
+            l.itersMax = r.itersMax;
+            l.indexMax = r.indexMax;
+        }
+        return l;
     }
 };
 
@@ -79,7 +85,7 @@ public:
         }
 
         image[index] = Color::fromIterations(iters, Complex<float>(cur), maxIters, useSmoothing);
-        stats[index] = { iters, iters, iters };
+        stats[index] = { iters-minIters, iters-minIters, iters-minIters, index };
     }
 
 public:

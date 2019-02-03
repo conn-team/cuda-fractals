@@ -254,9 +254,9 @@ private:
         StatsEntry entry = stats.get(stats.size()-1);
 
         skippedIters = skipped;
-        realMinIters = entry.itersMin - skipped;
-        realMaxIters = entry.itersMax - skipped;
-        avgIters = double(entry.itersSum) / double(width*height) - skipped;
+        realMinIters = entry.itersMin;
+        realMaxIters = entry.itersMax;
+        avgIters = double(entry.itersSum) / double(width*height);
     }
 
 public:
