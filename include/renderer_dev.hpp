@@ -31,8 +31,8 @@ public:
         return (Complex<T>(x, y) - refPointScreen) * scale;
     }
 
-    __device__ void render() {
-        int index = blockIdx.x*blockDim.x + threadIdx.x;
+    __device__ void render(int offset) {
+        int index = blockIdx.x*blockDim.x + threadIdx.x + offset;
         int x = index % width, y = index / width;
         if (y >= height) {
             return;
@@ -102,6 +102,6 @@ public:
 };
 
 template<typename Fractal, typename T>
-__global__ void renderImageKernel(RenderInfo<Fractal, T> info) {
-    info.render();
+__global__ void renderImageKernel(RenderInfo<Fractal, T> info, int offset) {
+    info.render(offset);
 }

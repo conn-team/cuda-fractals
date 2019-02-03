@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-    glutInitWindowSize(800, 600);
+    glutInitWindowSize(640, 480);
     glutInitWindowPosition(200, 200);
     glutCreateWindow("cuda-fractals");
 

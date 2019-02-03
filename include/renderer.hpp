@@ -223,6 +223,7 @@ private:
         }
 
         void render(Color *devImage) {
+            constexpr uint32_t maxBlocks = 32;
             constexpr uint32_t blockSize = 512;
             uint32_t nBlocks = (view.width*view.height+blockSize-1) / blockSize;
 
@@ -256,7 +257,11 @@ private:
             view.stats.resizeDiscard(view.width*view.height);
             info.stats = view.stats.data();
 
-            renderImageKernel<<<nBlocks, blockSize>>>(info);
+            for (uint32_t begin = 0; begin < nBlocks; begin += maxBlocks) {
+                uint32_t total = std::min(nBlocks-begin, maxBlocks);
+                renderImageKernel<<<total, blockSize>>>(info, begin*blockSize);
+            }
+
             view.processStats(info.minIters);
         }
 
