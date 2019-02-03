@@ -9,6 +9,7 @@ struct AutoZoom {
         view->maxIters = maxIters;
         view->preprocess();
         view->resetScale();
+        view->maxIters = 500;
     }
 
     bool update(BaseRenderer *view) {
@@ -20,7 +21,7 @@ struct AutoZoom {
         BigFloat nextScale = view->getScale() * rate;
         double frac = double(log10(scale) / log10(destScale));
 
-        //view->maxIters = max(int(maxIters*frac), 250);
+        view->maxIters = (nextScale > 1e-5 ? 500 : maxIters);
         view->center = center;
         view->setScale(std::max(nextScale, destScale));
         return true;

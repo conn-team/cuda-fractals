@@ -59,7 +59,7 @@ public:
     int width, height, maxIters;
     bool useSeriesApproximation{true};
     bool useSmoothing{false};
-    bool useBetterReference{true};
+    bool useBetterReference{false};
 
     // Statistics
     int skippedIters{0}, realMinIters{0}, realMaxIters{0};
