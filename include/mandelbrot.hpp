@@ -23,6 +23,7 @@ struct Mandelbrot {
     Series<Complex<T>> seriesStep(const Series<Complex<T>>& prevSeries, const Complex<T>& prevReference) const {
         Series<Complex<T>> ret;
 
+        #pragma omp parallel for
         for (int i = 0; i < SERIES_DEGREE; i++) {
             ret[i] = prevSeries[i] * prevReference;
 

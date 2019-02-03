@@ -3,7 +3,7 @@
 #include "cuda_helper.hpp"
 #include "complex.hpp"
 
-constexpr int SERIES_DEGREE = 16;
+constexpr int SERIES_DEGREE = 32;
 
 template<typename T>
 class Series {
