@@ -36,3 +36,6 @@ build/
 
 # bin directory
 bin/
+
+# recording
+*.mp4

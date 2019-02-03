@@ -10,6 +10,7 @@
 
 #include "autozoom.hpp"
 #include "benchmark.hpp"
+#include "recorder.hpp"
 #include "cuda_helper.hpp"
 #include "renderer.hpp"
 #include "mandelbrot.hpp"
@@ -322,20 +323,9 @@ int main(int argc, char **argv) {
         runBenchmarks();
         return 0;
     }
-
-    if (argc == 6 && strcmp(argv[1], "zoom") == 0) {
-        autoZoom.destScale = BigFloat(argv[4]);
-        BigFloat::default_precision(max(30L, lround(10 - log10(autoZoom.destScale))));
-        autoZoom.center.x = BigFloat(argv[2]);
-        autoZoom.center.y = BigFloat(argv[3]);
-        autoZoom.maxIters = atoi(argv[5]);
-        
-        std::cout << "======== AutoZoom params ========" << std::endl;
-        std::cout << "center.x  " << autoZoom.center.x << std::endl;
-        std::cout << "center.y  " << autoZoom.center.y << std::endl;
-        std::cout << "destScale " << autoZoom.destScale << std::endl;
-        std::cout << "maxIters  " << autoZoom.maxIters << std::endl;
-        std::cout << std::endl;
+    if (argc == 2 && strcmp(argv[1], "record") == 0) {
+        runRecorder();
+        return 0;
     }
 
     glutInit(&argc, argv);
