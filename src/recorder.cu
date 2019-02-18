@@ -9,12 +9,20 @@
 #include "renderer.hpp"
 #include "position_library.hpp"
 
-constexpr int PRESET = 6;
-constexpr double ZOOM_RATE = 0.94;
-constexpr int FRAMERATE = 30;
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-constexpr int SUPERSAMPLING = 4;
+// constexpr int PRESET = 6;
+// constexpr double ZOOM_RATE = 0.94;
+// constexpr int FRAMERATE = 30;
+// constexpr int WIDTH = 1280;
+// constexpr int HEIGHT = 720;
+// constexpr int SUPERSAMPLING = 4;
+
+constexpr int PRESET = 4;
+constexpr double ZOOM_RATE = 0.85;
+constexpr int FRAMERATE = 25;
+constexpr int WIDTH = 640;
+constexpr int HEIGHT = 480;
+constexpr int SUPERSAMPLING = 1;
+
 const char *OUTPUT_FILE = "output.mkv";
 
 FILE *ffmpegRecord(const char *file, int fps, int srcWidth, int srcHeight, int dstWidth, int dstHeight) {
