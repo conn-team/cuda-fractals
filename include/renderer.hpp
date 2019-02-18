@@ -102,23 +102,35 @@ private:
         void buildReferenceData(ReferenceData<T>& out) {
             BigComplex cur = out.point;
             out.values = { Complex<T>(cur) };
-            out.series = { ExtComplex(1) };
-            out.seriesErrors = { 0 };
 
-            // Race condition on maxIters and params, theoretically
             for (int i = 1; i < view.maxIters && out.values.back().norm() < view.params.bailoutSqr(); i++) {
-                out.series.push_back(view.params.seriesStep(out.series.back(), ExtComplex(cur)));
                 cur = view.params.step(out.point, cur);
                 out.values.push_back(Complex<T>(cur));
+            }
 
+            out.series.resize(out.values.size());
+            out.seriesErrors.resize(out.values.size());
+            out.series[0] = ExtComplex(1);
+            out.seriesErrors[0] = 0;
+
+            #pragma omp parallel
+            {
+                for (size_t i = 1; i < out.values.size(); i++) {
+                    #pragma omp for
+                    for (int j = 0; j < SERIES_DEGREE; j++) {
+                        out.series[i][j] = view.params.seriesStep(out.series[i-1], ExtComplex(out.values[i-1]), j);
+                    }
+                }
+            }
+
+            for (size_t i = 1; i < out.values.size(); i++) {
                 ExtFloat error = 0;
 
                 if (i >= SERIES_DEGREE) {
-                    auto& curSeries = out.series.back();
-                    error = curSeries[SERIES_DEGREE-1].norm() / curSeries[0].norm();
+                    error = out.series[i][SERIES_DEGREE-1].norm() / out.series[i][0].norm();
                 }
 
-                out.seriesErrors.push_back(std::max(out.seriesErrors.back(), error));
+                out.seriesErrors[i] = std::max(out.seriesErrors[i-1], error);
             }
 
             out.devValues.assign(out.values);

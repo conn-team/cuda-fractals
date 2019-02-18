@@ -20,24 +20,19 @@ struct Mandelbrot {
     }
 
     template<typename T>
-    Series<Complex<T>> seriesStep(const Series<Complex<T>>& prevSeries, const Complex<T>& prevReference) const {
-        Series<Complex<T>> ret;
+    Complex<T> seriesStep(const Series<Complex<T>>& prevSeries, const Complex<T>& prevReference, int i) const {
+        Complex<T> ret = prevSeries[i] * prevReference;
 
-        #pragma omp parallel for
-        for (int i = 0; i < SERIES_DEGREE; i++) {
-            ret[i] = prevSeries[i] * prevReference;
+        for (int j = 0; j < i/2; j++) {
+            ret += prevSeries[j] * prevSeries[i-j-1];
+        }
 
-            for (int j = 0; j < i/2; j++) {
-                ret[i] += prevSeries[j] * prevSeries[i-j-1];
-            }
+        ret *= T(2);
 
-            ret[i] *= T(2);
-
-            if (i % 2) {
-                ret[i] += prevSeries[i/2].sqr();
-            } else if (i == 0) {
-                ret[i] += T(1);
-            }
+        if (i % 2) {
+            ret += prevSeries[i/2].sqr();
+        } else if (i == 0) {
+            ret += T(1);
         }
 
         return ret;
